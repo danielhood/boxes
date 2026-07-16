@@ -121,7 +121,7 @@ Add tests in the same PR as implementation. Do not mark spec acceptance criteria
 
 ## Step 5 — Run verification (required)
 
-From repo root (Linux; install Bevy deps per `README.md` if needed):
+From repo root (Linux; install Bevy deps per [`BUILD.md`](../../BUILD.md) if needed):
 
 ```bash
 cargo test --workspace
@@ -158,7 +158,8 @@ Update in the **same commit series** as code. Checklist:
 ### Planning and README
 
 - [ ] [`docs/planning/initial-planning.md`](../../docs/planning/initial-planning.md) — update **Implementation status** table.
-- [ ] [`README.md`](../../README.md) — **Status** line, crate table, and `cargo run` notes if behavior changed.
+- [ ] [`README.md`](../../README.md) — **Status** line, usage/keybindings, crate table if behavior changed
+- [ ] [`BUILD.md`](../../BUILD.md) — build/run instructions if setup or CI commands changed.
 
 ### Next phase spec
 
@@ -182,14 +183,32 @@ Use conventional commits: `feat(sim):`, `feat(render):`, `docs:`, etc.
 
 ### Pull request
 
-Use the **ManagePullRequest** tool (not `gh pr create`):
+Open a PR with **Summary**, bullet deliverables, and a **Test plan** (checked items for `cargo test`, `cargo clippy`, and any manual steps). Mark draft only if explicitly requested; otherwise open ready for review.
+
+**Preferred:** use the **ManagePullRequest** tool when it is available:
 
 - **branch_name** — your `cursor/...-dd82` branch
 - **base_branch** — `main`
 - **title** — mirrors commit subject
-- **body** — Summary (what/why), bullet deliverables, **Test plan** with checked items for `cargo test`, `cargo clippy`, and any manual steps
+- **body** — Summary (what/why), bullet deliverables, **Test plan**
 
-Mark draft only if explicitly requested; otherwise open ready for review.
+**Fallback:** if ManagePullRequest is **not** available, use `gh pr create` via the Shell tool (same title/body content):
+
+```bash
+gh pr create --title "<type>(<scope>): implement P<N> <short title>" --body "$(cat <<'EOF'
+## Summary
+<1–3 bullet points>
+
+## Test plan
+- [x] `cargo test --workspace`
+- [x] `cargo clippy --workspace -- -D warnings`
+- [ ] <manual smoke steps if any>
+
+EOF
+)"
+```
+
+Return the PR URL to the user when done.
 
 ---
 

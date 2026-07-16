@@ -32,6 +32,7 @@ Draw the visible subset of the grid from orthographic cameras using GPU instanci
 |----------|--------|
 | Instancing | Bevy 0.16 automatic instancing — shared `Mesh3d` + per-type `StandardMaterial` |
 | View surface | **Top:** max Y per (x,z); **Front:** max Z per (x,y); **Left:** min X per (y,z) |
+| Depth slice clip | Added in P4 — `visible_surface` takes `slice_depth`; hides cells between slice and camera before surface extraction ([P4-input-tools](P4-input-tools.md)) |
 | Sim/render sync | **Snap** on sim step (no interpolation) |
 | Sim rate | 20 Hz fixed timestep, `max_steps_per_frame = 2` |
 | View switch | `1`/`T` top, `2`/`F` front, `3`/`L` left |

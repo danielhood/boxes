@@ -1,8 +1,8 @@
 # P5 — Factory UI
 
-**Status:** draft  
+**Status:** active  
 **Last updated:** 2026-07-16  
-**Roadmap:** [P5](../roadmap/active.md)  
+**Roadmap:** [P5 — current](../roadmap/active.md)  
 **Related:** [P4-input-tools](P4-input-tools.md), [initial planning](../planning/initial-planning.md)
 
 ## Goal
@@ -22,6 +22,20 @@
 
 - Full analytics dashboard (P8)
 - Theming / art pass
+- Replacing P4 keyboard palette (UI complements `ToolState` / `Shift`+digit)
+
+## P4 integration (shipped)
+
+P5 UI reads and drives existing P4 resources — do not duplicate pick/placement logic.
+
+| P4 artifact | P5 use |
+|-------------|--------|
+| `InspectedCell` | Inspector panel for RMB / inspect-tool picks |
+| `ToolState` + `PalettePreset` | UI palette selection; placement still via P4 pointer system |
+| `ViewSlice` | Optional on-screen depth readout; slice nudge may stay on keyboard |
+| Clipped `visible_surface` | Inspector/pick must match what the player sees ([P4 spec](P4-input-tools.md)) |
+
+Default controls: [README usage](../../README.md#using-the-app).
 
 ## Acceptance criteria
 

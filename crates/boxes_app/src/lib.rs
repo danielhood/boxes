@@ -1,10 +1,12 @@
 //! Bevy application shell for Boxes — simulation bridge and chunked grid rendering.
 
+mod input;
 mod render;
 mod sim_bridge;
 
 use bevy::prelude::*;
 
+pub use input::{ActiveTool, InputPlugin, InspectedCell, PalettePreset, ToolState, ViewSlice};
 pub use render::{ActiveView, GridRenderPlugin, OrthoView};
 pub use sim_bridge::GridSimulation;
 
@@ -16,7 +18,7 @@ pub struct BoxesAppPlugin;
 impl Plugin for BoxesAppPlugin {
     fn build(&self, app: &mut App) {
         app.insert_resource(ClearColor(Color::srgb(0.08, 0.09, 0.11)))
-            .add_plugins(GridRenderPlugin)
+            .add_plugins((GridRenderPlugin, InputPlugin))
             .add_systems(Startup, setup_simulation)
             .add_systems(Update, sim_step_system);
     }

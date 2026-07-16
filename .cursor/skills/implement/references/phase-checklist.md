@@ -24,11 +24,11 @@ Copy into the agent todo list or PR body when running the **implement** skill.
 - [ ] `docs/roadmap/completed.md` updated
 - [ ] `docs/roadmap/active.md` — next phase promoted
 - [ ] `docs/planning/initial-planning.md` — status table
-- [ ] `README.md` — status / run instructions if needed
+- [ ] `README.md` — status / usage if needed; `BUILD.md` if build setup changed
 - [ ] Next phase spec set to `active`
 
 ## Ship
 
 - [ ] Committed with conventional message
 - [ ] `git push -u origin <branch>`
-- [ ] PR opened via ManagePullRequest with test plan
+- [ ] PR opened (ManagePullRequest, or `gh pr create` if that tool is unavailable) with test plan

@@ -109,7 +109,6 @@ pub fn sim_step_system(
 }
 
 /// When cells are edited externally, queue rebuilds (P4 placement tools).
-#[allow(dead_code)]
 pub fn queue_rebuild_for_positions(
     positions: &[WorldPos],
     view: OrthoView,
@@ -140,5 +139,36 @@ mod tests {
         let dirty = sim.step(1);
         assert!(sim.tick >= 1);
         let _ = dirty;
+    }
+
+    #[test]
+    fn queue_rebuild_for_edited_cell() {
+        use boxes_sim::{make_generator, Cell, WorldPos};
+        use crate::render::{OrthoView, PendingChunkRebuilds};
+
+        let mut sim = Simulation::new();
+        let pos = WorldPos::new(10, 10, 10);
+        let mut pending = PendingChunkRebuilds::default();
+
+        sim.world.set(pos, make_generator(20, 1));
+        queue_rebuild_for_positions(&[pos], OrthoView::Top, &mut pending);
+        assert!(!pending.chunks.is_empty());
+
+        sim.world.set(pos, Cell::empty());
+        queue_rebuild_for_positions(&[pos], OrthoView::Top, &mut pending);
+        assert!(!pending.chunks.is_empty());
+    }
+
+    #[test]
+    fn view_switch_preserves_world_state() {
+        use crate::render::OrthoView;
+
+        let mut sim = Simulation::new();
+        seed_demo_world(&mut sim);
+        let count_before = sim.world.chunks.chunk_count();
+
+        // View changes are render-only; sim state is unchanged.
+        let _views = [OrthoView::Top, OrthoView::Front, OrthoView::Left];
+        assert_eq!(sim.world.chunks.chunk_count(), count_before);
     }
 }

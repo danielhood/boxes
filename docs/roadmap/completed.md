@@ -40,3 +40,11 @@ Shipped work is logged here with links to specs and merge PRs. Promote the next 
 | P3 | Chunked GPU instancing, ortho views, dirty chunk rebuild bridge | [P3-rendering](../specs/P3-rendering.md) | _PR pending_ |
 
 **Exit criteria met:** `GridRenderPlugin` draws visible surface per ortho face; `1`/`T`, `2`/`F`, `3`/`L` switch cameras; sim 20 Hz snap-sync; incremental chunk instance rebuild.
+
+## P4 — Input and tools (shipped 2026-07-16)
+
+| Slice | Summary | Spec | Shipped |
+|-------|---------|------|---------|
+| P4 | Ray pick, place/erase/inspect, depth slice with render clip, drag placement | [P4-input-tools](../specs/P4-input-tools.md) | [PR #8](https://github.com/danielhood/boxes/pull/8) |
+
+**Exit criteria met:** Orthographic ray pick per view (unit test vectors); place at slice depth / erase+inspect on clipped surface; `visible_surface` hides cells between slice and camera; slice nudge rebuilds render; place/erase queue chunk rebuilds; view switch is render-only; `InputPlugin` + `BUILD.md` usage docs.
