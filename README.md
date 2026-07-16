@@ -41,7 +41,7 @@ A window opens with a seeded demo grid in an orthographic viewport. Close the wi
 
 ### Views
 
-The world is shown one orthographic face at a time. Each view shows the **visible surface** of the grid (e.g. top view shows the highest non-empty cell in each column).
+The world is shown one orthographic face at a time. The **visible surface** is the topmost cell per column at or behind the current **depth slice**; cells between the slice and the camera are hidden.
 
 | Key | View |
 |-----|------|
@@ -101,6 +101,7 @@ See [BUILD.md](BUILD.md) for toolchain setup, Linux dependencies, and `cargo` co
 
 ```text
 boxes/
+  BUILD.md                # toolchain setup, build, test, CI
   Cargo.toml              # workspace root
   rust-toolchain.toml
   crates/

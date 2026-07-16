@@ -48,6 +48,8 @@ Each doc should start with:
 - [Active roadmap](roadmap/active.md)
 - [Completed phases](roadmap/completed.md)
 - [Future phases](roadmap/future.md)
+- [P4 input + tools spec](specs/P4-input-tools.md) (shipped)
+- [README — app controls](../../README.md#using-the-app) and [BUILD.md](../../BUILD.md) at repo root
 
 ## Agent skills
 

@@ -45,6 +45,6 @@ Shipped work is logged here with links to specs and merge PRs. Promote the next 
 
 | Slice | Summary | Spec | Shipped |
 |-------|---------|------|---------|
-| P4 | Ray pick, place/erase/inspect tools, depth slice, drag placement | [P4-input-tools](../specs/P4-input-tools.md) | _PR pending_ |
+| P4 | Ray pick, place/erase/inspect, depth slice with render clip, drag placement | [P4-input-tools](../specs/P4-input-tools.md) | [PR #8](https://github.com/danielhood/boxes/pull/8) |
 
-**Exit criteria met:** Orthographic ray pick resolves correct surface cell per view (unit test vectors); place/erase update sim and queue chunk rebuilds; view switch is render-only and preserves world state.
+**Exit criteria met:** Orthographic ray pick per view (unit test vectors); place at slice depth / erase+inspect on clipped surface; `visible_surface` hides cells between slice and camera; slice nudge rebuilds render; place/erase queue chunk rebuilds; view switch is render-only; `InputPlugin` + `BUILD.md` usage docs.
