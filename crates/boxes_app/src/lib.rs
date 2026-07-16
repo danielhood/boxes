@@ -1,6 +1,7 @@
 //! Bevy application shell for Boxes — window, orthographic camera, placeholder scene.
 
 use bevy::prelude::*;
+use bevy::render::camera::{OrthographicProjection, Projection, ScalingMode};
 
 /// Root plugin: clear color, orthographic viewport, and a minimal placeholder scene.
 pub struct BoxesAppPlugin;
