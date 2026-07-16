@@ -1,8 +1,8 @@
 # P2 — Cell types
 
-**Status:** draft  
+**Status:** active  
 **Last updated:** 2026-07-16  
-**Roadmap:** [P2](../roadmap/active.md)  
+**Roadmap:** [P2 — current](../roadmap/active.md)  
 **Related:** [P1-simulation-core](P1-simulation-core.md)
 
 ## Goal
