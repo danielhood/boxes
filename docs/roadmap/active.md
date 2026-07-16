@@ -10,7 +10,7 @@ Phases listed here are **in progress** or **up next**. When a phase ships, move 
 
 | Slice | Summary | Spec | Status |
 |-------|---------|------|--------|
-| P0.1 | Rust workspace + Bevy app shell (window, ortho camera, empty scene) | [P0-project-foundation](../specs/P0-project-foundation.md) | not started |
+| P0.1 | Rust workspace + Bevy app shell (window, ortho camera, empty scene) | [P0-project-foundation](../specs/P0-project-foundation.md) | in review |
 | P0.2 | Documentation structure and planning baseline | — | **done** (this repo docs layout) |
 
 **Exit criteria for P0:** Bevy binary runs on Linux; one orthographic viewport; docs/roadmap and docs/specs conventions in use.
