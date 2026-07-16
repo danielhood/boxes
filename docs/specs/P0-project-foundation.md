@@ -1,8 +1,8 @@
 # P0 — Project foundation
 
-**Status:** active  
+**Status:** shipped  
 **Last updated:** 2026-07-16  
-**Roadmap:** [P0.1](../roadmap/active.md)  
+**Roadmap:** [P0 — completed](../roadmap/completed.md)  
 **Related:** [initial planning](../planning/initial-planning.md)
 
 ## Goal
@@ -31,7 +31,7 @@ Establish a minimal Rust + Bevy application that runs on Linux and proves the re
 - [x] `cargo run` opens a window on Linux
 - [x] Scene uses orthographic projection
 - [x] Project structure documents where sim vs render crates will live
-- [ ] No warnings under `cargo clippy` with project `#![warn(...)]` baseline (optional for P0)
+- [x] No warnings under `cargo clippy -- -D warnings` (CI enforces this)
 
 ## Suggested layout
 
@@ -46,4 +46,4 @@ boxes/
 
 ## Notes
 
-P0.2 (documentation) is complete via `docs/` layout and planning capture.
+P0.2 (documentation) shipped in [PR #1](https://github.com/danielhood/boxes/pull/1). P0.1 shipped in [PR #2](https://github.com/danielhood/boxes/pull/2). See [completed roadmap](../roadmap/completed.md).
