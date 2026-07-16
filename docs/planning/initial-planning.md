@@ -10,8 +10,9 @@
 |-------|--------|-------|
 | P0 — Project foundation | **shipped** (2026-07-16) | [completed log](../roadmap/completed.md) — Bevy 0.16 app shell, CI, docs layout |
 | P1 — Simulation core | **shipped** (2026-07-16) | [completed log](../roadmap/completed.md) — `boxes_sim` kernel |
-| P2 — Cell types | **active** | [active roadmap](../roadmap/active.md) |
-| P3–P5 | queued | Specs drafted under `docs/specs/` |
+| P2 — Cell types | **shipped** (2026-07-16) | [completed log](../roadmap/completed.md) — generator / transformer / aggregator |
+| P3 — Rendering | **active** | [active roadmap](../roadmap/active.md) |
+| P4–P5 | queued | Specs drafted under `docs/specs/` |
 | P6+ | backlog | [future roadmap](../roadmap/future.md) |
 
 ## Summary
