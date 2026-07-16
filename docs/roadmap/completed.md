@@ -32,3 +32,11 @@ Shipped work is logged here with links to specs and merge PRs. Promote the next 
 | P2 | Generator, transformer, aggregator + type-aware dirty propagation | [P2-cell-types](../specs/P2-cell-types.md) | _PR pending_ |
 
 **Exit criteria met:** `CellEngine` wired as default `Simulation::step`; phased generators; directional transformers; sum/max aggregators; stable dirty draining; activity-scaled update tests.
+
+## P3 — Rendering (shipped 2026-07-16)
+
+| Slice | Summary | Spec | Shipped |
+|-------|---------|------|---------|
+| P3 | Chunked GPU instancing, ortho views, dirty chunk rebuild bridge | [P3-rendering](../specs/P3-rendering.md) | _PR pending_ |
+
+**Exit criteria met:** `GridRenderPlugin` draws visible surface per ortho face; `1`/`T`, `2`/`F`, `3`/`L` switch cameras; sim 20 Hz snap-sync; incremental chunk instance rebuild.

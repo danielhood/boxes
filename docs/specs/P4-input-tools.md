@@ -1,8 +1,8 @@
 # P4 — Input and tools
 
-**Status:** draft  
+**Status:** active  
 **Last updated:** 2026-07-16  
-**Roadmap:** [P4](../roadmap/active.md)  
+**Roadmap:** [P4 — current](../roadmap/active.md)  
 **Related:** [P3-rendering](P3-rendering.md), [P5-factory-ui](P5-factory-ui.md)
 
 ## Goal
