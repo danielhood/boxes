@@ -3,15 +3,19 @@
 //! This crate owns the grid model, cell types, and tick scheduler. It has no
 //! Bevy dependency; `boxes_app` reads dirty chunks and drives rendering.
 
-/// Placeholder until P1 implements the simulation core.
-pub const STUB: &str = "boxes_sim stub — see docs/specs/P1-simulation-core.md";
+mod cell;
+mod chunk;
+mod constants;
+mod coord;
+mod sim;
+mod world;
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn stub_is_non_empty() {
-        assert!(!STUB.is_empty());
-    }
-}
+pub use cell::{Cell, CellFlags, TYPE_EMPTY};
+pub use chunk::Chunk;
+pub use constants::{
+    CHUNK_SIZE, CHUNK_VOLUME, CHUNKS_PER_AXIS, DT, MAX_STEPS_PER_FRAME, PHASE_COUNT,
+    TICK_RATE_HZ, WORLD_SIZE,
+};
+pub use coord::{cell_at, phase, world_pos_from_local, ChunkCoord, WorldPos};
+pub use sim::{NullHooks, SimConfig, SimHooks, Simulation};
+pub use world::{ChunkMap, World};

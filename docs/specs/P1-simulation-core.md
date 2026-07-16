@@ -1,8 +1,8 @@
 # P1 — Simulation core
 
-**Status:** active  
+**Status:** shipped  
 **Last updated:** 2026-07-16  
-**Roadmap:** [P1 — current](../roadmap/active.md)  
+**Roadmap:** [P1 — completed](../roadmap/completed.md)  
 **Related:** [initial planning](../planning/initial-planning.md), [P2-cell-types](P2-cell-types.md)
 
 ## Goal
@@ -45,10 +45,12 @@ Target **8–16 bytes** per cell. Example layout (subject to implementation):
 
 | Field | Size | Notes |
 |-------|------|-------|
-| `type_id` | u8 / u16 | 0 = empty |
-| `state` | u8 / u32 | type-specific payload |
+| `type_id` | u8 | 0 = empty |
 | `flags` | u8 | dirty, pinned, etc. |
-| `reserved` | — | alignment / future timer |
+| `state` | u16 | type-specific payload |
+| `reserved` | u32 | alignment / future timer |
+
+Implemented as 8-byte `Cell` in `boxes_sim::cell`.
 
 Empty cells should be representable without heap allocation per cell (default sentinel in dense chunk array).
 
@@ -63,12 +65,12 @@ For each tick `T`:
 
 ## Acceptance criteria
 
-- [ ] Indexing: world `(x,y,z)` maps to chunk + local index; bounds 0..499
-- [ ] Sparse allocation: empty region uses no chunk memory
-- [ ] `step(1)` advances `T` and is deterministic given same inputs
-- [ ] Phase function matches `(x+y+z) % 8`
-- [ ] Tests cover chunk boundary neighbors
-- [ ] Benchmark stub: iterate 1M cell writes + 1000 ticks (no hard perf gate yet)
+- [x] Indexing: world `(x,y,z)` maps to chunk + local index; bounds 0..499
+- [x] Sparse allocation: empty region uses no chunk memory
+- [x] `step(1)` advances `T` and is deterministic given same inputs
+- [x] Phase function matches `(x+y+z) % 8`
+- [x] Tests cover chunk boundary neighbors
+- [x] Benchmark stub: iterate 1M cell writes + 1000 ticks (no hard perf gate yet)
 
 ## Open questions
 

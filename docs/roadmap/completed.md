@@ -16,3 +16,11 @@ Shipped work is logged here with links to specs and merge PRs. Promote the next 
 **Exit criteria met:** `cargo run` opens a Linux window with an orthographic viewport and placeholder cube; `boxes` / `boxes_app` / `boxes_sim` workspace layout in place; `docs/` planning, roadmap, and specs conventions established; CI runs `cargo build`, `cargo test`, and `cargo clippy -- -D warnings` on Ubuntu.
 
 **Stack pinned:** Bevy 0.16, Rust stable (via `rust-toolchain.toml`).
+
+## P1 — Simulation core (shipped 2026-07-16)
+
+| Slice | Summary | Spec | Shipped |
+|-------|---------|------|---------|
+| P1 | Sparse 32³ chunks, 8-byte `Cell`, 20 Hz tick scheduler, dirty queue + hooks | [P1-simulation-core](../specs/P1-simulation-core.md) | _PR pending_ |
+
+**Exit criteria met:** `boxes_sim::Simulation` with `step(ticks) -> Vec<ChunkCoord>`; sparse `ChunkMap` for 500³ world; phase `(x+y+z)%8`; `SimHooks` for P2; unit + benchmark stub tests.

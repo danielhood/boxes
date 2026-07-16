@@ -42,8 +42,8 @@ fn setup_scene(
         Transform::from_xyz(0.0, 0.0, 0.0),
     ));
 
-    // Touch the sim stub so the workspace link stays wired until P1.
-    let _ = boxes_sim::STUB;
+    // Touch the sim crate so the workspace link stays wired until P3 rendering.
+    let _ = boxes_sim::Simulation::new();
 }
 
 #[cfg(test)]
