@@ -2,7 +2,7 @@
 
 Single-player, offline desktop factory game for Linux. Manipulate a large 3D grid of cubes whose **state** changes over time — not their position. There is no player avatar; you build and tune fields of typed cells (generators, transformers, aggregators) viewed from orthographic faces (top, front, left).
 
-**Status:** P4 shipped — mouse/keyboard tools and orthographic cell picking in `boxes_app`; P5 factory UI is next.
+**Status:** P5 shipped — factory UI overlay (palette, inspector, pause/step/speed) in `boxes_app`; P6 persistence is next.
 
 ## Concept
 
@@ -91,6 +91,23 @@ Hold **Shift** and press a digit to select a palette slot and switch to place mo
 
 The simulation runs continuously at 20 Hz in the background. Placed cells participate in generator, transformer, and aggregator behavior immediately.
 
+### Factory UI
+
+A 2D overlay complements keyboard tools:
+
+| Control | Action |
+|---------|--------|
+| **Type palette** (left) | Click a slot to select cell type and switch to place mode |
+| **Inspector** (bottom left) | Live readout for the cell picked with RMB or inspect tool |
+| **Pause / Resume** | Stops or resumes simulation stepping |
+| **Step** | Advances exactly one simulation tick (works while paused) |
+| **Speed** | Cycles sim speed: 0.5×, 1×, 2× |
+| **Debug** | Toggles last-tick cell update and dirty-chunk readout |
+| **Throughput HUD** (bottom right) | Current tick, cumulative cell updates, last-tick dirty chunks |
+| **Depth readout** | Current depth slice for the active orthographic view |
+
+Keyboard palette (`Shift`+digit) and slice nudge (`[`/`]`) remain available alongside the UI.
+
 Bindings will be configurable in a future release (P9).
 
 ## Build and development
@@ -106,7 +123,7 @@ boxes/
   rust-toolchain.toml
   crates/
     boxes/                # binary entrypoint (`cargo run`)
-    boxes_app/            # Bevy app — render, input, UI (later)
+    boxes_app/            # Bevy app — render, input, factory UI
     boxes_sim/            # simulation kernel (sparse chunks, tick scheduler)
   docs/
     planning/
@@ -117,7 +134,7 @@ boxes/
 | Crate | Role |
 |-------|------|
 | `boxes` | Thin binary; wires Bevy `DefaultPlugins` + `BoxesAppPlugin` |
-| `boxes_app` | Window, cameras, chunked GPU instancing, sim tick bridge, input tools |
+| `boxes_app` | Window, cameras, chunked GPU instancing, sim tick bridge, input tools, factory UI |
 | `boxes_sim` | Sparse 32³ grid, 20 Hz `Simulation::step`, generator/transformer/aggregator cell types |
 
 ## License

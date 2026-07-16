@@ -22,8 +22,8 @@ pub use coord::{cell_at, phase, world_pos_from_local, ChunkCoord, WorldPos};
 pub use engine::CellEngine;
 pub use sim::{NullHooks, SimConfig, SimHooks, Simulation};
 pub use types::{
-    generator_period, make_aggregator, make_generator, make_transformer, CellTypeInfo,
-    CellTypeRegistry, Direction, ReduceMode, TYPE_AGGREGATOR, TYPE_EMPTY, TYPE_GENERATOR,
-    TYPE_TRANSFORMER,
+    aggregator_mode, generator_period, make_aggregator, make_generator, make_transformer,
+    transformer_direction, CellTypeInfo, CellTypeRegistry, Direction, ReduceMode,
+    TYPE_AGGREGATOR, TYPE_EMPTY, TYPE_GENERATOR, TYPE_TRANSFORMER,
 };
 pub use world::{ChunkMap, World};

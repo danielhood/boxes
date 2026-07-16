@@ -171,6 +171,43 @@ impl ToolState {
     }
 }
 
+#[must_use]
+pub fn palette_slot_label(slot: usize, preset: PalettePreset) -> String {
+    let slot_num = slot + 1;
+    match preset {
+        PalettePreset::Generator { period } => {
+            let seconds = period as f32 / 20.0;
+            format!("{slot_num}. gen {seconds:.1}s")
+        }
+        PalettePreset::Transformer { direction } => {
+            format!("{slot_num}. xform {}", direction_label(direction))
+        }
+        PalettePreset::Aggregator { mode } => {
+            format!("{slot_num}. agg {}", reduce_mode_label(mode))
+        }
+    }
+}
+
+#[must_use]
+pub fn direction_label(direction: Direction) -> &'static str {
+    match direction {
+        Direction::PosX => "+X",
+        Direction::NegX => "-X",
+        Direction::PosY => "+Y",
+        Direction::NegY => "-Y",
+        Direction::PosZ => "+Z",
+        Direction::NegZ => "-Z",
+    }
+}
+
+#[must_use]
+pub fn reduce_mode_label(mode: ReduceMode) -> &'static str {
+    match mode {
+        ReduceMode::Sum => "sum",
+        ReduceMode::Max => "max",
+    }
+}
+
 /// Last cell inspected via RMB or inspect tool.
 #[derive(Resource, Default, Clone, Debug)]
 pub struct InspectedCell {

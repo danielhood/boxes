@@ -7,6 +7,7 @@ pub use pick::{pick_slice_cell, pick_surface_cell};
 #[allow(unused_imports)]
 pub use pick::pick_surface_at_uv;
 pub use tools::{slice_nudge_delta, ActiveTool, InspectedCell, PalettePreset, ToolState, ViewSlice};
+pub use tools::{direction_label, palette_slot_label, reduce_mode_label};
 
 use bevy::prelude::*;
 use bevy::window::PrimaryWindow;
