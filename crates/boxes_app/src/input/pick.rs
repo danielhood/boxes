@@ -107,8 +107,9 @@ pub fn pick_surface_at_uv(
     view: OrthoView,
     u: u16,
     v: u16,
+    slice_depth: u16,
 ) -> Option<WorldPos> {
-    let surface = visible_surface(sim, view);
+    let surface = visible_surface(sim, view, slice_depth);
     surface.get(&(u, v)).map(|(pos, _)| *pos)
 }
 
@@ -117,6 +118,7 @@ pub fn pick_surface_at_uv(
 pub fn pick_surface_cell(
     sim: &Simulation,
     view: OrthoView,
+    slice_depth: u16,
     ray_origin: Vec3,
     ray_direction: Vec3,
 ) -> Option<WorldPos> {
@@ -125,7 +127,7 @@ pub fn pick_surface_cell(
     let plane_normal = view_plane_normal(view);
     let hit = ray_plane_intersect(ray_origin, ray_direction, plane_point, plane_normal)?;
     let (u, v) = world_hit_to_uv(view, hit)?;
-    pick_surface_at_uv(sim, view, u, v)
+    pick_surface_at_uv(sim, view, u, v, slice_depth)
 }
 
 /// Pick a cell at the current depth slice (for placement into empty columns).
@@ -148,6 +150,8 @@ pub fn pick_slice_cell(
 mod tests {
     use super::*;
     use boxes_sim::{make_generator, make_transformer, Direction};
+
+    use crate::render::unclipped_slice_depth;
 
     const EPS: f32 = 0.01;
 
@@ -208,7 +212,9 @@ mod tests {
         sim.world
             .set(WorldPos::new(10, 8, 10), make_generator(20, 2));
 
-        let picked = pick_surface_at_uv(&sim, OrthoView::Top, 10, 10).unwrap();
+        let picked =
+            pick_surface_at_uv(&sim, OrthoView::Top, 10, 10, unclipped_slice_depth(OrthoView::Top))
+                .unwrap();
         assert_eq!(picked, WorldPos::new(10, 8, 10));
     }
 
@@ -220,7 +226,14 @@ mod tests {
         sim.world
             .set(WorldPos::new(5, 5, 9), make_generator(20, 2));
 
-        let picked = pick_surface_at_uv(&sim, OrthoView::Front, 5, 5).unwrap();
+        let picked = pick_surface_at_uv(
+            &sim,
+            OrthoView::Front,
+            5,
+            5,
+            unclipped_slice_depth(OrthoView::Front),
+        )
+        .unwrap();
         assert_eq!(picked, WorldPos::new(5, 5, 9));
     }
 
@@ -232,7 +245,14 @@ mod tests {
         sim.world
             .set(WorldPos::new(1, 5, 5), make_generator(20, 2));
 
-        let picked = pick_surface_at_uv(&sim, OrthoView::Left, 5, 5).unwrap();
+        let picked = pick_surface_at_uv(
+            &sim,
+            OrthoView::Left,
+            5,
+            5,
+            unclipped_slice_depth(OrthoView::Left),
+        )
+        .unwrap();
         assert_eq!(picked, WorldPos::new(1, 5, 5));
     }
 
@@ -246,7 +266,14 @@ mod tests {
         sim.world
             .set(WorldPos::new(10, 8, 10), make_transformer(Direction::PosX, 0));
 
-        let picked = pick_surface_cell(&sim, OrthoView::Top, origin, direction).unwrap();
+        let picked = pick_surface_cell(
+            &sim,
+            OrthoView::Top,
+            unclipped_slice_depth(OrthoView::Top),
+            origin,
+            direction,
+        )
+        .unwrap();
         assert_eq!(picked, WorldPos::new(10, 8, 10));
     }
 
@@ -259,7 +286,14 @@ mod tests {
         sim.world
             .set(WorldPos::new(5, 5, 9), make_generator(20, 1));
 
-        let picked = pick_surface_cell(&sim, OrthoView::Front, origin, direction).unwrap();
+        let picked = pick_surface_cell(
+            &sim,
+            OrthoView::Front,
+            unclipped_slice_depth(OrthoView::Front),
+            origin,
+            direction,
+        )
+        .unwrap();
         assert_eq!(picked, WorldPos::new(5, 5, 9));
     }
 
@@ -272,7 +306,14 @@ mod tests {
         sim.world
             .set(WorldPos::new(1, 5, 5), make_generator(20, 1));
 
-        let picked = pick_surface_cell(&sim, OrthoView::Left, origin, direction).unwrap();
+        let picked = pick_surface_cell(
+            &sim,
+            OrthoView::Left,
+            unclipped_slice_depth(OrthoView::Left),
+            origin,
+            direction,
+        )
+        .unwrap();
         assert_eq!(picked, WorldPos::new(1, 5, 5));
     }
 

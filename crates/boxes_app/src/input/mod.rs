@@ -6,7 +6,7 @@ mod tools;
 pub use pick::{pick_slice_cell, pick_surface_cell};
 #[allow(unused_imports)]
 pub use pick::pick_surface_at_uv;
-pub use tools::{ActiveTool, InspectedCell, PalettePreset, ToolState, ViewSlice};
+pub use tools::{slice_nudge_delta, ActiveTool, InspectedCell, PalettePreset, ToolState, ViewSlice};
 
 use bevy::prelude::*;
 use bevy::window::PrimaryWindow;
@@ -97,21 +97,19 @@ fn slice_keyboard_system(
     active: Res<ActiveView>,
     mut slice: ResMut<ViewSlice>,
 ) {
-    let delta = if keyboard.just_pressed(KeyCode::BracketRight) {
-        Some(1)
-    } else if keyboard.just_pressed(KeyCode::BracketLeft) {
-        Some(-1)
-    } else {
-        None
-    };
-
-    let Some(delta) = delta else {
+    let Some(delta) = slice_nudge_delta(&keyboard) else {
         return;
     };
 
     let view = active.0;
     let next = slice.nudge(view, delta);
     slice.set_depth(view, next);
+    info!(
+        "depth slice {}={} ({})",
+        ViewSlice::depth_axis_label(view),
+        next,
+        view.label()
+    );
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -154,7 +152,7 @@ fn pointer_tool_system(
     let depth = slice.depth(view);
 
     if inspect_pressed || tools.active == ActiveTool::Inspect && apply_pressed {
-        if let Some(pos) = pick_surface_cell(&sim.0, view, origin, direction) {
+        if let Some(pos) = pick_surface_cell(&sim.0, view, depth, origin, direction) {
             let cell = sim.0.world.get(pos);
             inspected.pos = Some(pos);
             inspected.cell = cell;
@@ -180,11 +178,9 @@ fn pointer_tool_system(
     }
 
     let target = match tools.active {
-        ActiveTool::Erase => pick_surface_cell(&sim.0, view, origin, direction),
-        ActiveTool::Place => {
-            pick_surface_cell(&sim.0, view, origin, direction)
-                .or_else(|| pick_slice_cell(view, depth, origin, direction))
-        }
+        ActiveTool::Erase => pick_surface_cell(&sim.0, view, depth, origin, direction),
+        // Place at the current depth slice (not the visible surface).
+        ActiveTool::Place => pick_slice_cell(view, depth, origin, direction),
         ActiveTool::Inspect => None,
     };
 

@@ -75,6 +75,15 @@ impl ViewSlice {
     }
 
     #[must_use]
+    pub const fn depth_axis_label(view: OrthoView) -> &'static str {
+        match view {
+            OrthoView::Top => "Y",
+            OrthoView::Front => "Z",
+            OrthoView::Left => "X",
+        }
+    }
+
+    #[must_use]
     pub fn nudge(self, view: OrthoView, delta: i16) -> u16 {
         let current = self.depth(view) as i32;
         let next = (current + i32::from(delta)).clamp(0, i32::from(WORLD_SIZE as u16 - 1));
@@ -88,6 +97,24 @@ impl ViewSlice {
             OrthoView::Front => self.front_z = depth,
             OrthoView::Left => self.left_x = depth,
         }
+    }
+}
+
+/// Keyboard delta for depth slice nudge (`[`/`]`, page keys, `-`/`=`).
+#[must_use]
+pub fn slice_nudge_delta(keyboard: &ButtonInput<KeyCode>) -> Option<i16> {
+    if keyboard.just_pressed(KeyCode::BracketRight)
+        || keyboard.just_pressed(KeyCode::PageUp)
+        || keyboard.just_pressed(KeyCode::Equal)
+    {
+        Some(1)
+    } else if keyboard.just_pressed(KeyCode::BracketLeft)
+        || keyboard.just_pressed(KeyCode::PageDown)
+        || keyboard.just_pressed(KeyCode::Minus)
+    {
+        Some(-1)
+    } else {
+        None
     }
 }
 
@@ -173,5 +200,18 @@ mod tests {
         let tool = ToolState::default();
         let cell = tool.selected_preset().to_cell();
         assert!(!cell.is_empty());
+    }
+
+    #[test]
+    fn depth_axis_label_per_view() {
+        assert_eq!(ViewSlice::depth_axis_label(OrthoView::Top), "Y");
+        assert_eq!(ViewSlice::depth_axis_label(OrthoView::Front), "Z");
+        assert_eq!(ViewSlice::depth_axis_label(OrthoView::Left), "X");
+    }
+
+    #[test]
+    fn slice_nudge_delta_none_without_keys() {
+        let keyboard = ButtonInput::<KeyCode>::default();
+        assert_eq!(slice_nudge_delta(&keyboard), None);
     }
 }

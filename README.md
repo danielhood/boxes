@@ -29,75 +29,73 @@ Start with [docs/README.md](docs/README.md) for workflow and naming conventions.
 
 **Active work:** [docs/roadmap/active.md](docs/roadmap/active.md)
 
-## Local environment setup
+## Using the app
 
-Tested on Ubuntu/Debian Linux. Other distros need equivalent Bevy/winit dev packages.
-
-### 1. Rust toolchain
-
-Install [rustup](https://rustup.rs/) if you do not already have `cargo`:
-
-```bash
-curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
-source "$HOME/.cargo/env"
-```
-
-The repo pins stable via [`rust-toolchain.toml`](rust-toolchain.toml); the first `cargo` command in this directory will install that toolchain automatically.
-
-Check:
-
-```bash
-rustc --version
-cargo --version
-```
-
-### 2. Linux system libraries
-
-Bevy links against ALSA, Wayland/X11, and Mesa. On Ubuntu/Debian:
-
-```bash
-sudo apt-get update
-sudo apt-get install -y \
-  pkg-config \
-  libasound2-dev \
-  libudev-dev \
-  libwayland-dev \
-  libxkbcommon-dev \
-  libegl1-mesa-dev \
-  libgles2-mesa-dev
-```
-
-`pkg-config` is required for native dependency discovery; without it, `cargo build` fails on crates such as `alsa-sys` and `wayland-sys`.
-
-### 3. Verify the workspace
-
-From the repo root:
-
-```bash
-cargo build --workspace
-cargo test --workspace
-cargo run
-```
-
-`cargo run` opens a window with the seeded demo grid in an orthographic viewport.
-
-**Controls:** `1`/`T`, `2`/`F`, `3`/`L` switch top/front/left views; LMB place/erase (per active tool); RMB inspect; `E` erase tool, `P` place, `I` inspect; `Shift`+`1`–`9` palette slot; `[`/`]` depth slice. Close the window to exit.
-
-## Building and running
-
-From the repo root after setup:
+Run from the repo root after [setup](BUILD.md):
 
 ```bash
 cargo run
 ```
 
-Other useful commands:
+A window opens with a seeded demo grid in an orthographic viewport. Close the window to exit.
 
-```bash
-cargo build          # debug build
-cargo test           # workspace smoke tests
-cargo clippy         # lint (CI runs with -D warnings)
-```
+### Views
+
+The world is shown one orthographic face at a time. Each view shows the **visible surface** of the grid (e.g. top view shows the highest non-empty cell in each column).
+
+| Key | View |
+|-----|------|
+| `1` or `T` | Top (looking down Y) |
+| `2` or `F` | Front (looking along −Z) |
+| `3` or `L` | Left (looking along +X) |
+
+### Tools
+
+| Input | Action |
+|-------|--------|
+| **LMB** | Apply the active tool on the cell under the cursor |
+| **LMB drag** | Apply the active tool while dragging across cells |
+| **RMB** | Inspect the cell under the cursor |
+| `P` | Place tool (default) |
+| `E` | Erase tool — removes the visible surface cell |
+| `I` | Inspect tool — same as RMB |
+
+**Place** puts the selected palette cell type at the current depth slice in the column under the cursor. **Erase** clears the visible surface cell. **Inspect** logs cell coordinates, type, and state to the console.
+
+### Depth slice
+
+Place tool writes cells at the current depth slice for the column under the cursor. The view **clips** cells between the slice and the camera so you always see the layer you are editing. Nudge the slice before placing; the console logs each change (e.g. `depth slice Y=251 (Top)`).
+
+| Key | Action |
+|-----|--------|
+| `[` or `PageDown` or `-` | Decrease depth (one layer toward the camera) |
+| `]` or `PageUp` or `=` | Increase depth (one layer away from the camera) |
+
+The depth axis depends on the view: **Y** in top, **Z** in front, **X** in left.
+
+### Type palette
+
+Hold **Shift** and press a digit to select a palette slot and switch to place mode:
+
+| Slot | Cell type |
+|------|-----------|
+| `Shift`+`1` | Generator (standard, 1 s) |
+| `Shift`+`2` | Generator (fast, 0.5 s) |
+| `Shift`+`3` | Generator (slow, 5 s) |
+| `Shift`+`4` | Transformer (+X input) |
+| `Shift`+`5` | Transformer (+Z input) |
+| `Shift`+`6` | Aggregator (sum) |
+| `Shift`+`7` | Aggregator (max) |
+| `Shift`+`8` | Transformer (−Y input) |
+| `Shift`+`9` | Transformer (+Y input) |
+
+The simulation runs continuously at 20 Hz in the background. Placed cells participate in generator, transformer, and aggregator behavior immediately.
+
+Bindings will be configurable in a future release (P9).
+
+## Build and development
+
+See [BUILD.md](BUILD.md) for toolchain setup, Linux dependencies, and `cargo` commands.
 
 ## Repository layout
 
@@ -120,8 +118,6 @@ boxes/
 | `boxes` | Thin binary; wires Bevy `DefaultPlugins` + `BoxesAppPlugin` |
 | `boxes_app` | Window, cameras, chunked GPU instancing, sim tick bridge, input tools |
 | `boxes_sim` | Sparse 32³ grid, 20 Hz `Simulation::step`, generator/transformer/aggregator cell types |
-
-CI (`.github/workflows/ci.yml`) runs on every push and PR: `cargo build`, `cargo test`, and `cargo clippy -- -D warnings` on Ubuntu with Bevy system libraries installed.
 
 ## License
 

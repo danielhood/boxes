@@ -35,6 +35,8 @@ Mouse and keyboard interaction with the world: pick cells, place/edit types, swi
 | `I` | Inspect tool |
 | `Shift` + `1`–`9` | Select cell type palette slot |
 | `[` / `]` | Nudge depth slice on active view axis |
+| `PageUp` / `PageDown` | Nudge depth slice (alternate) |
+| `-` / `=` | Nudge depth slice (alternate) |
 
 Bindings are configurable in P9.
 
@@ -44,7 +46,8 @@ Bindings are configurable in P9.
 |----------|--------|
 | Pick math | Pure `input/pick.rs` — ray/plane intersect → view UV → surface or slice depth |
 | Surface pick | Reuses P3 `visible_surface` policy per ortho face |
-| Placement target | Surface cell if hit; else depth slice at `[`/`]` offset |
+| Placement target | Always at current depth slice; erase/inspect use visible surface |
+| Slice feedback | Console log on nudge; alt keys `PageUp`/`PageDown`, `-`/`=` |
 | Palette | Nine presets (generators, transformers, aggregators) via `Shift`+digit |
 | Inspect | RMB or inspect tool; logs cell state; `InspectedCell` resource for P5 UI |
 | Render bridge | `queue_rebuild_for_positions` on place/erase |

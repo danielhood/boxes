@@ -8,6 +8,7 @@ use boxes_sim::{Cell, ChunkCoord, WorldPos};
 use super::materials::GridMaterials;
 use super::surface::{surface_cells_for_chunk, visible_surface};
 use super::view::{cell_to_world, ActiveView, OrthoView};
+use crate::ViewSlice;
 
 /// Instance cube spawned for one visible surface cell.
 #[derive(Component)]
@@ -55,9 +56,23 @@ pub fn mark_view_change(
     }
 }
 
+pub fn mark_slice_change(
+    active: Res<ActiveView>,
+    slice: Res<ViewSlice>,
+    mut last_depth: Local<Option<u16>>,
+    mut pending: ResMut<PendingChunkRebuilds>,
+) {
+    let depth = slice.depth(active.0);
+    if *last_depth != Some(depth) {
+        *last_depth = Some(depth);
+        pending.mark_all();
+    }
+}
+
 pub fn rebuild_chunk_instances(
     mut commands: Commands,
     active: Res<ActiveView>,
+    slice: Res<ViewSlice>,
     materials: Res<GridMaterials>,
     sim: Res<crate::GridSimulation>,
     mut cache: ResMut<ChunkRenderCache>,
@@ -67,7 +82,8 @@ pub fn rebuild_chunk_instances(
         return;
     }
 
-    let surface = visible_surface(&sim.0, active.0);
+    let slice_depth = slice.depth(active.0);
+    let surface = visible_surface(&sim.0, active.0, slice_depth);
 
     let targets: HashSet<ChunkCoord> = if pending.rebuild_all {
         surface
@@ -126,12 +142,14 @@ mod tests {
     use super::*;
     use boxes_sim::{make_generator, Simulation};
 
+    use super::super::surface::unclipped_slice_depth;
+
     #[test]
     fn surface_cells_grouped_by_chunk() {
         let mut sim = Simulation::new();
         sim.world
             .set(WorldPos::new(33, 40, 33), make_generator(20, 1));
-        let surface = visible_surface(&sim, OrthoView::Top);
+        let surface = visible_surface(&sim, OrthoView::Top, unclipped_slice_depth(OrthoView::Top));
         let coord = WorldPos::new(33, 40, 33).chunk_coord();
         let cells = surface_cells_for_chunk(&surface, coord);
         assert_eq!(cells.len(), 1);

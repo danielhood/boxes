@@ -7,11 +7,13 @@ mod view;
 
 pub use chunk::{ChunkRenderCache, PendingChunkRebuilds};
 pub use surface::{affected_chunks, visible_surface};
+#[allow(unused_imports)]
+pub use surface::unclipped_slice_depth;
 pub use view::{ActiveView, GridCamera, OrthoView, ViewCameras, WORLD_CENTER};
 
 use bevy::prelude::*;
 
-use chunk::{mark_view_change, queue_initial_rebuild, rebuild_chunk_instances};
+use chunk::{mark_slice_change, mark_view_change, queue_initial_rebuild, rebuild_chunk_instances};
 use materials::GridMaterials;
 use view::{setup_cameras, switch_view_system};
 
@@ -32,6 +34,7 @@ impl Plugin for GridRenderPlugin {
                 (
                     switch_view_system,
                     mark_view_change,
+                    mark_slice_change,
                     rebuild_chunk_instances,
                 )
                     .chain(),
