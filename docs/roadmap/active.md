@@ -6,13 +6,13 @@
 
 Phases listed here are **in progress** or **up next**. When a phase ships, move its row to [completed.md](completed.md); link the implementing spec from the Spec column.
 
-## Current phase: P3 — Rendering
+## Current phase: P4 — Input + tools
 
 | Slice | Summary | Spec | Status |
 |-------|---------|------|--------|
-| P3 | Chunked GPU instancing, ortho view switching, dirty buffer updates | [P3-rendering](../specs/P3-rendering.md) | not started |
+| P4 | Mouse pick, place/edit cells, keyboard view switch | [P4-input-tools](../specs/P4-input-tools.md) | not started |
 
-**Exit criteria for P3:** Visible orthographic grid renders from `boxes_sim` dirty chunks; view switching between top/front/left; chunk instance buffers update incrementally.
+**Exit criteria for P4:** Raycast picks cells in active ortho view; tools place/edit cell types; view keys integrated with render bridge.
 
 ---
 
@@ -20,7 +20,6 @@ Phases listed here are **in progress** or **up next**. When a phase ships, move 
 
 | Phase | Summary | Spec | Status |
 |-------|---------|------|--------|
-| P4 | Input + tools — mouse pick, place/edit cells, keyboard view switch | [P4-input-tools](../specs/P4-input-tools.md) | not started |
 | P5 | Factory UI — metrics, cell inspector, type palette | [P5-factory-ui](../specs/P5-factory-ui.md) | not started |
 
 Implement in order unless a spec explicitly notes a dependency exception.
