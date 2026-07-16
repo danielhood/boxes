@@ -2,7 +2,16 @@
 
 **Status:** active  
 **Last updated:** 2026-07-16  
-**Related:** [roadmap/active.md](../roadmap/active.md), [roadmap/future.md](../roadmap/future.md)
+**Related:** [roadmap/active.md](../roadmap/active.md), [roadmap/completed.md](../roadmap/completed.md), [roadmap/future.md](../roadmap/future.md)
+
+## Implementation status
+
+| Phase | Status | Notes |
+|-------|--------|-------|
+| P0 — Project foundation | **shipped** (2026-07-16) | [completed log](../roadmap/completed.md) — Bevy 0.16 app shell, CI, docs layout |
+| P1 — Simulation core | **active** | [active roadmap](../roadmap/active.md) — `boxes_sim` stub in repo |
+| P2–P5 | queued | Specs drafted under `docs/specs/` |
+| P6+ | backlog | [future roadmap](../roadmap/future.md) |
 
 ## Summary
 

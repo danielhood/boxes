@@ -1,8 +1,8 @@
 # P1 — Simulation core
 
-**Status:** draft  
+**Status:** active  
 **Last updated:** 2026-07-16  
-**Roadmap:** [P1](../roadmap/active.md)  
+**Roadmap:** [P1 — current](../roadmap/active.md)  
 **Related:** [initial planning](../planning/initial-planning.md), [P2-cell-types](P2-cell-types.md)
 
 ## Goal

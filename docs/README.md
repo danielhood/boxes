@@ -13,7 +13,7 @@ This directory holds all project documentation. Code lives at the repo root; **d
 ## Workflow
 
 1. **Planning** — Capture goals, constraints, and rejected alternatives. Do not duplicate full implementation detail here; link to specs.
-2. **Roadmap** — Break delivery into phases. Keep exactly one “current” view in [`roadmap/active.md`](roadmap/active.md). Move completed phases to [`roadmap/completed.md`](roadmap/completed.md) or archive with a date.
+2. **Roadmap** — Break delivery into phases. Keep exactly one “current” view in [`roadmap/active.md`](roadmap/active.md). Move completed phases to [`roadmap/completed.md`](roadmap/completed.md).
 3. **Specs** — When a roadmap slice is ready to build, add or update a spec under `specs/`. Specs are the source of truth for engineers and agents implementing that slice.
 
 ```
@@ -23,7 +23,7 @@ planning (why)  →  roadmap (what/when)  →  specs (how)
 ## Naming conventions
 
 - **Planning:** `planning/<topic>.md` — e.g. `initial-planning.md`
-- **Roadmap:** `roadmap/active.md` (current), `roadmap/future.md` (backlog), optional `roadmap/completed.md`
+- **Roadmap:** `roadmap/active.md` (current), `roadmap/completed.md` (shipped), `roadmap/future.md` (backlog)
 - **Specs:** `specs/<slice-id>-<short-name>.md` — e.g. `specs/P1-simulation-core.md`
 
 Use stable **slice IDs** (P1, P2, … or feature codes) in roadmap rows and spec filenames so cross-links stay valid.
@@ -46,4 +46,5 @@ Each doc should start with:
 
 - [Initial planning](planning/initial-planning.md)
 - [Active roadmap](roadmap/active.md)
+- [Completed phases](roadmap/completed.md)
 - [Future phases](roadmap/future.md)

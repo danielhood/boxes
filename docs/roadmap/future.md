@@ -2,7 +2,7 @@
 
 **Status:** active  
 **Last updated:** 2026-07-16  
-**Related:** [active roadmap](active.md), [initial planning](../planning/initial-planning.md)
+**Related:** [active roadmap](active.md), [completed phases](completed.md), [initial planning](../planning/initial-planning.md)
 
 Backlog phases are **not started**. Promote a row to [active.md](active.md) when it becomes current work; add or refine a spec under `docs/specs/` before implementation.
 
