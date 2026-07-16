@@ -1,8 +1,8 @@
 # P5 — Factory UI
 
-**Status:** draft  
+**Status:** active  
 **Last updated:** 2026-07-16  
-**Roadmap:** [P5](../roadmap/active.md)  
+**Roadmap:** [P5 — current](../roadmap/active.md)  
 **Related:** [P4-input-tools](P4-input-tools.md), [initial planning](../planning/initial-planning.md)
 
 ## Goal

@@ -6,8 +6,8 @@ mod surface;
 mod view;
 
 pub use chunk::{ChunkRenderCache, PendingChunkRebuilds};
-pub use surface::affected_chunks;
-pub use view::{ActiveView, OrthoView};
+pub use surface::{affected_chunks, visible_surface};
+pub use view::{ActiveView, GridCamera, OrthoView, ViewCameras, WORLD_CENTER};
 
 use bevy::prelude::*;
 

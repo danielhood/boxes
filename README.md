@@ -2,7 +2,7 @@
 
 Single-player, offline desktop factory game for Linux. Manipulate a large 3D grid of cubes whose **state** changes over time — not their position. There is no player avatar; you build and tune fields of typed cells (generators, transformers, aggregators) viewed from orthographic faces (top, front, left).
 
-**Status:** P3 in progress — chunked GPU instancing and orthographic view rendering in `boxes_app`.
+**Status:** P4 shipped — mouse/keyboard tools and orthographic cell picking in `boxes_app`; P5 factory UI is next.
 
 ## Concept
 
@@ -79,7 +79,9 @@ cargo test --workspace
 cargo run
 ```
 
-`cargo run` opens a window with the seeded demo grid in an orthographic viewport. Use `1`/`T`, `2`/`F`, `3`/`L` to switch top/front/left views. Close the window to exit.
+`cargo run` opens a window with the seeded demo grid in an orthographic viewport.
+
+**Controls:** `1`/`T`, `2`/`F`, `3`/`L` switch top/front/left views; LMB place/erase (per active tool); RMB inspect; `E` erase tool, `P` place, `I` inspect; `Shift`+`1`–`9` palette slot; `[`/`]` depth slice. Close the window to exit.
 
 ## Building and running
 
@@ -116,7 +118,7 @@ boxes/
 | Crate | Role |
 |-------|------|
 | `boxes` | Thin binary; wires Bevy `DefaultPlugins` + `BoxesAppPlugin` |
-| `boxes_app` | Window, cameras, chunked GPU instancing, sim tick bridge |
+| `boxes_app` | Window, cameras, chunked GPU instancing, sim tick bridge, input tools |
 | `boxes_sim` | Sparse 32³ grid, 20 Hz `Simulation::step`, generator/transformer/aggregator cell types |
 
 CI (`.github/workflows/ci.yml`) runs on every push and PR: `cargo build`, `cargo test`, and `cargo clippy -- -D warnings` on Ubuntu with Bevy system libraries installed.

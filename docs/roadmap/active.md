@@ -6,20 +6,18 @@
 
 Phases listed here are **in progress** or **up next**. When a phase ships, move its row to [completed.md](completed.md); link the implementing spec from the Spec column.
 
-## Current phase: P4 — Input + tools
+## Current phase: P5 — Factory UI
 
 | Slice | Summary | Spec | Status |
 |-------|---------|------|--------|
-| P4 | Mouse pick, place/edit cells, keyboard view switch | [P4-input-tools](../specs/P4-input-tools.md) | not started |
+| P5 | Metrics, cell inspector, type palette | [P5-factory-ui](../specs/P5-factory-ui.md) | not started |
 
-**Exit criteria for P4:** Raycast picks cells in active ortho view; tools place/edit cell types; view keys integrated with render bridge.
+**Exit criteria for P5:** Player can select type from UI and place via P4 tools; inspector shows live state for picked cell; pause stops `sim.step`; step advances exactly one tick.
 
 ---
 
 ## Up next (still active queue)
 
-| Phase | Summary | Spec | Status |
-|-------|---------|------|--------|
-| P5 | Factory UI — metrics, cell inspector, type palette | [P5-factory-ui](../specs/P5-factory-ui.md) | not started |
+_No additional queued phases in this file — see [future.md](future.md) for backlog._
 
 Implement in order unless a spec explicitly notes a dependency exception.
