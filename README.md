@@ -29,13 +29,36 @@ Start with [docs/README.md](docs/README.md) for workflow and naming conventions.
 
 **Active work:** [docs/roadmap/active.md](docs/roadmap/active.md)
 
-## Requirements
+## Local environment setup
 
-- **Rust:** stable toolchain (see [`rust-toolchain.toml`](rust-toolchain.toml))
-- **Linux:** system libraries for Bevy/winit (Ubuntu/Debian example):
+Tested on Ubuntu/Debian Linux. Other distros need equivalent Bevy/winit dev packages.
+
+### 1. Rust toolchain
+
+Install [rustup](https://rustup.rs/) if you do not already have `cargo`:
 
 ```bash
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+source "$HOME/.cargo/env"
+```
+
+The repo pins stable via [`rust-toolchain.toml`](rust-toolchain.toml); the first `cargo` command in this directory will install that toolchain automatically.
+
+Check:
+
+```bash
+rustc --version
+cargo --version
+```
+
+### 2. Linux system libraries
+
+Bevy links against ALSA, Wayland/X11, and Mesa. On Ubuntu/Debian:
+
+```bash
+sudo apt-get update
 sudo apt-get install -y \
+  pkg-config \
   libasound2-dev \
   libudev-dev \
   libwayland-dev \
@@ -44,15 +67,27 @@ sudo apt-get install -y \
   libgles2-mesa-dev
 ```
 
-## Building and running
+`pkg-config` is required for native dependency discovery; without it, `cargo build` fails on crates such as `alsa-sys` and `wayland-sys`.
+
+### 3. Verify the workspace
 
 From the repo root:
 
 ```bash
+cargo build --workspace
+cargo test --workspace
 cargo run
 ```
 
-This opens a window with an orthographic 3D viewport and a placeholder cube. Close the window or press the OS close shortcut to exit.
+`cargo run` should open a window with an orthographic 3D viewport and a placeholder cube. Close the window to exit.
+
+## Building and running
+
+From the repo root after setup:
+
+```bash
+cargo run
+```
 
 Other useful commands:
 
