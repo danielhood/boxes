@@ -1,0 +1,15 @@
+[package]
+name = "boxes"
+description = "Boxes — offline factory game for Linux"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[[bin]]
+name = "boxes"
+path = "src/main.rs"
+
+[dependencies]
+bevy = { version = "0.16", default-features = true }
+boxes_app = { path = "../boxes_app" }
