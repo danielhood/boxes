@@ -48,3 +48,7 @@ Each doc should start with:
 - [Active roadmap](roadmap/active.md)
 - [Completed phases](roadmap/completed.md)
 - [Future phases](roadmap/future.md)
+
+## Agent skills
+
+Project skills live in [`.cursor/skills/`](../.cursor/skills/). Use **implement** when shipping a roadmap phase from its spec.
