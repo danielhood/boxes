@@ -1,8 +1,8 @@
 # P3 — Rendering
 
-**Status:** draft  
+**Status:** active  
 **Last updated:** 2026-07-16  
-**Roadmap:** [P3](../roadmap/active.md)  
+**Roadmap:** [P3 — current](../roadmap/active.md)  
 **Related:** [P1-simulation-core](P1-simulation-core.md), [P4-input-tools](P4-input-tools.md)
 
 ## Goal

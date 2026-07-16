@@ -1,8 +1,8 @@
 # P2 — Cell types
 
-**Status:** active  
+**Status:** shipped  
 **Last updated:** 2026-07-16  
-**Roadmap:** [P2 — current](../roadmap/active.md)  
+**Roadmap:** [P2 — completed](../roadmap/completed.md)  
 **Related:** [P1-simulation-core](P1-simulation-core.md)
 
 ## Goal
@@ -38,11 +38,23 @@ Exact state machines and neighbor masks are defined during implementation; keep 
 
 ## Acceptance criteria
 
-- [ ] Generator fires on correct ticks for all 8 phases
-- [ ] Transformer updates only when input neighbors change
-- [ ] Aggregator matches specified reduce rule in tests
-- [ ] No infinite dirty loop on stable configuration
-- [ ] Update count scales with activity, not total non-empty cells (instrumented test)
+- [x] Generator fires on correct ticks for all 8 phases
+- [x] Transformer updates only when input neighbors change
+- [x] Aggregator matches specified reduce rule in tests
+- [x] No infinite dirty loop on stable configuration
+- [x] Update count scales with activity, not total non-empty cells (instrumented test)
+
+## Cell encoding (implemented)
+
+| Type | `state` | `reserved` |
+|------|---------|------------|
+| Generator | output pulse counter | `period_ticks` |
+| Transformer | copied value | input `Direction` (0–5) |
+| Aggregator | reduced value | `ReduceMode` (`Sum` / `Max`) |
+
+## Read/write cycle
+
+Neighbors are read at the start of a dirty-cell evaluation; the cell writes once at the end of that evaluation. Dirty propagation to transformers/aggregators runs only when `state` or `type_id` changes.
 
 ## Factory tuning defaults
 

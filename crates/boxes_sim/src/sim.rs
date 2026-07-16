@@ -7,6 +7,7 @@ use crate::constants::{
     TICK_RATE_HZ,
 };
 use crate::coord::{ChunkCoord, WorldPos};
+use crate::engine::CellEngine;
 use crate::world::World;
 
 /// Per-tick budget and rate configuration.
@@ -34,16 +35,19 @@ impl SimConfig {
     }
 }
 
-/// Hooks for P2 cell-type logic. P1 provides no-op defaults.
+/// Hooks for cell-type logic and extensions.
 pub trait SimHooks {
     /// Process one dirty cell (transformer / aggregator entry point).
     fn on_dirty_cell(&mut self, _sim: &mut Simulation, _pos: WorldPos) {}
 
     /// Periodic generator scheduling entry point for one phase bucket.
     fn on_phase_tick(&mut self, _sim: &mut Simulation, _tick: u64, _phase: u8) {}
+
+    /// Called at the start of each simulation tick.
+    fn on_tick_start(&mut self, _sim: &mut Simulation) {}
 }
 
-/// Default no-op hooks until P2 wires cell behaviors.
+/// Default no-op hooks for tests and raw grid stepping.
 #[derive(Clone, Copy, Debug, Default)]
 pub struct NullHooks;
 
@@ -55,6 +59,7 @@ pub struct Simulation {
     pub world: World,
     pub tick: u64,
     pub config: SimConfig,
+    pub total_cell_updates: u64,
     dirty_queue: VecDeque<WorldPos>,
     queued_dirty: HashSet<WorldPos>,
     drained_this_tick: HashSet<WorldPos>,
@@ -79,6 +84,7 @@ impl Simulation {
             world: World::new(),
             tick: 0,
             config,
+            total_cell_updates: 0,
             dirty_queue: VecDeque::new(),
             queued_dirty: HashSet::new(),
             drained_this_tick: HashSet::new(),
@@ -89,6 +95,24 @@ impl Simulation {
     #[must_use]
     pub fn dt(&self) -> f32 {
         self.config.dt()
+    }
+
+    #[must_use]
+    pub fn dirty_queue_len(&self) -> usize {
+        self.dirty_queue.len()
+    }
+
+    #[must_use]
+    pub fn is_queued_dirty(&self, pos: WorldPos) -> bool {
+        self.queued_dirty.contains(&pos)
+    }
+
+    pub(crate) fn record_cell_update(&mut self) {
+        self.total_cell_updates += 1;
+    }
+
+    pub(crate) fn mark_chunk_dirty(&mut self, coord: ChunkCoord) {
+        self.dirty_chunks.insert(coord);
     }
 
     /// Enqueue a cell for event-driven re-evaluation.
@@ -103,12 +127,18 @@ impl Simulation {
         self.dirty_chunks.insert(pos.chunk_coord());
     }
 
-    /// Advance the simulation by `ticks` steps. Returns chunk coords dirtied this call.
+    /// Advance the simulation with built-in cell-type behaviors.
     pub fn step(&mut self, ticks: u32) -> Vec<ChunkCoord> {
-        self.step_with_hooks(ticks, &mut NullHooks)
+        self.step_cells(ticks)
     }
 
-    /// Advance with custom P2 hooks.
+    /// Advance the simulation with built-in cell-type behaviors.
+    pub fn step_cells(&mut self, ticks: u32) -> Vec<ChunkCoord> {
+        let mut engine = CellEngine::new();
+        self.step_with_hooks(ticks, &mut engine)
+    }
+
+    /// Advance with custom hooks (testing or extensions).
     pub fn step_with_hooks<H: SimHooks>(&mut self, ticks: u32, hooks: &mut H) -> Vec<ChunkCoord> {
         let mut all_dirty = HashSet::new();
 
@@ -131,6 +161,7 @@ impl Simulation {
             .min(max_updates);
 
         self.drained_this_tick.clear();
+        hooks.on_tick_start(self);
 
         // 1. Drain dirty queue (event-driven cells).
         while updates < max_drain {
@@ -148,13 +179,9 @@ impl Simulation {
             hooks.on_dirty_cell(self, pos);
             self.dirty_chunks.insert(pos.chunk_coord());
             updates += 1;
-
-            if updates < max_updates {
-                updates += self.propagate_dirty_stub(pos, max_updates - updates);
-            }
         }
 
-        // 2. Phase-gated periodic work (generators in P2).
+        // 2. Phase-gated periodic work (generators).
         let tick = self.tick;
         for phase_id in 0..PHASE_COUNT {
             hooks.on_phase_tick(self, tick, phase_id);
@@ -162,34 +189,14 @@ impl Simulation {
 
         self.tick += 1;
     }
-
-    /// P1 stub: enqueue face neighbors when a dirty cell is processed.
-    fn propagate_dirty_stub(&mut self, pos: WorldPos, budget: usize) -> usize {
-        let mut propagated = 0usize;
-        for neighbor in pos.neighbors_6() {
-            if propagated >= budget {
-                break;
-            }
-            if self.world.get(neighbor).is_empty() {
-                continue;
-            }
-            if self.queued_dirty.contains(&neighbor) {
-                continue;
-            }
-            if self.drained_this_tick.contains(&neighbor) {
-                continue;
-            }
-            self.mark_dirty(neighbor);
-            propagated += 1;
-        }
-        propagated
-    }
 }
+
 #[cfg(test)]
 mod tests {
     use super::*;
     use crate::cell::Cell;
     use crate::phase;
+    use crate::types::{make_transformer, Direction, TYPE_GENERATOR};
 
     struct RecordingHooks {
         dirty_calls: u32,
@@ -218,10 +225,10 @@ mod tests {
     fn step_advances_tick_deterministically() {
         let mut sim = Simulation::new();
         sim.mark_dirty(WorldPos::new(1, 2, 3));
-        let _ = sim.step(1);
+        let _ = sim.step_with_hooks(1, &mut NullHooks);
         assert_eq!(sim.tick, 1);
         let tick_after = sim.tick;
-        let _ = sim.step(0);
+        let _ = sim.step_with_hooks(0, &mut NullHooks);
         assert_eq!(sim.tick, tick_after);
     }
 
@@ -229,7 +236,7 @@ mod tests {
     fn step_invokes_hooks() {
         let mut sim = Simulation::new();
         let pos = WorldPos::new(5, 5, 5);
-        sim.world.set_typed(pos, 1, 0);
+        sim.world.set_typed(pos, TYPE_GENERATOR, 0);
         sim.mark_dirty(pos);
 
         let mut hooks = RecordingHooks {
@@ -244,23 +251,24 @@ mod tests {
     }
 
     #[test]
-    fn dirty_propagation_stub_enqueues_neighbors() {
+    fn type_aware_dirty_propagation_enqueues_listeners() {
         let mut sim = Simulation::new();
         let center = WorldPos::new(10, 10, 10);
-        let neighbor = WorldPos::new(11, 10, 10);
+        let listener = WorldPos::new(11, 10, 10);
 
-        sim.world.set_typed(center, 1, 0);
-        sim.world.set_typed(neighbor, 2, 0);
-        sim.mark_dirty(center);
+        sim.world.set_typed(center, TYPE_GENERATOR, 1);
+        sim.world
+            .set(listener, make_transformer(Direction::PosX, 0));
+
+        crate::engine::CellEngine::propagate_to_listeners(&mut sim, center);
+        assert!(sim.is_queued_dirty(listener));
 
         let mut hooks = RecordingHooks {
             dirty_calls: 0,
             phase_calls: 0,
         };
         let _ = sim.step_with_hooks(1, &mut hooks);
-
-        // Center drains first; stub propagates to neighbor, which drains in the same tick.
-        assert_eq!(hooks.dirty_calls, 2);
+        assert_eq!(hooks.dirty_calls, 1);
     }
 
     #[test]
@@ -268,14 +276,14 @@ mod tests {
         let mut sim = Simulation::new();
         let pos = WorldPos::new(64, 64, 64);
         sim.world.set(pos, Cell {
-            type_id: 1,
+            type_id: TYPE_GENERATOR,
             flags: 0,
             state: 1,
-            reserved: 0,
+            reserved: 20,
         });
         sim.mark_dirty(pos);
 
-        let dirty = sim.step(1);
+        let dirty = sim.step_with_hooks(1, &mut NullHooks);
         assert_eq!(dirty, vec![pos.chunk_coord()]);
     }
 
@@ -287,12 +295,11 @@ mod tests {
             let x = (i % 500) as u16;
             let y = ((i / 500) % 500) as u16;
             let z = ((i / 250_000) % 500) as u16;
-            sim.world.set_typed(WorldPos::new(x, y, z), 1, (i % 65536) as u16);
+            sim.world.set_typed(WorldPos::new(x, y, z), TYPE_GENERATOR, 0);
         }
 
-        let dirty = sim.step(1000);
+        let dirty = sim.step_with_hooks(1000, &mut NullHooks);
         assert_eq!(sim.tick, 1000);
-        // Chunks were allocated; stepping may report none without dirty queue input.
         let _ = dirty;
         assert!(sim.world.chunks.chunk_count() > 0);
     }

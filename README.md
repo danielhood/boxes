@@ -2,7 +2,7 @@
 
 Single-player, offline desktop factory game for Linux. Manipulate a large 3D grid of cubes whose **state** changes over time — not their position. There is no player avatar; you build and tune fields of typed cells (generators, transformers, aggregators) viewed from orthographic faces (top, front, left).
 
-**Status:** P1 shipped — `boxes_sim` sparse chunked grid and tick scheduler; P2 cell types is next ([roadmap](docs/roadmap/active.md)).
+**Status:** P2 shipped — generator, transformer, and aggregator cell types in `boxes_sim`; P3 rendering is next ([roadmap](docs/roadmap/active.md)).
 
 ## Concept
 
@@ -117,7 +117,7 @@ boxes/
 |-------|------|
 | `boxes` | Thin binary; wires Bevy `DefaultPlugins` + `BoxesAppPlugin` |
 | `boxes_app` | Window, cameras, scene, and future input/UI |
-| `boxes_sim` | Sparse 32³ `ChunkMap`, 8-byte `Cell`, 20 Hz `Simulation::step` — no Bevy dependency |
+| `boxes_sim` | Sparse 32³ grid, 20 Hz `Simulation::step`, generator/transformer/aggregator cell types |
 
 CI (`.github/workflows/ci.yml`) runs on every push and PR: `cargo build`, `cargo test`, and `cargo clippy -- -D warnings` on Ubuntu with Bevy system libraries installed.
 

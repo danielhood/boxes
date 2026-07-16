@@ -24,3 +24,11 @@ Shipped work is logged here with links to specs and merge PRs. Promote the next 
 | P1 | Sparse 32³ chunks, 8-byte `Cell`, 20 Hz tick scheduler, dirty queue + hooks | [P1-simulation-core](../specs/P1-simulation-core.md) | _PR pending_ |
 
 **Exit criteria met:** `boxes_sim::Simulation` with `step(ticks) -> Vec<ChunkCoord>`; sparse `ChunkMap` for 500³ world; phase `(x+y+z)%8`; `SimHooks` for P2; unit + benchmark stub tests.
+
+## P2 — Cell types (shipped 2026-07-16)
+
+| Slice | Summary | Spec | Shipped |
+|-------|---------|------|---------|
+| P2 | Generator, transformer, aggregator + type-aware dirty propagation | [P2-cell-types](../specs/P2-cell-types.md) | _PR pending_ |
+
+**Exit criteria met:** `CellEngine` wired as default `Simulation::step`; phased generators; directional transformers; sum/max aggregators; stable dirty draining; activity-scaled update tests.
