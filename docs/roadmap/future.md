@@ -42,4 +42,3 @@ Backlog phases are **not started**. Promote a row to [active.md](active.md) when
 - Player avatar / character movement
 - Free-orbit 3D camera (ortho faces only for v1)
 - Mobile or web targets
-- Live Scryfall-style external sync (N/A — not applicable to Boxes)
