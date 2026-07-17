@@ -146,7 +146,8 @@ fn slice_keyboard_system(
     let Some(delta) = slice_depth_delta(&keyboard) else {
         return;
     };
-    let next = active.pose.nudge_depth(selection.pos, delta);
+    let steps = active.pose.depth_step_delta(delta);
+    let next = active.pose.nudge_depth(selection.pos, steps);
     set_selection(&mut selection, next);
 }
 
@@ -181,7 +182,8 @@ fn wheel_input_system(
         return;
     }
 
-    let steps = delta.signum() as i16;
+    let forward_steps = delta.signum() as i16;
+    let steps = active.pose.depth_step_delta(forward_steps);
     let next = active.pose.nudge_depth(selection.pos, steps);
     set_selection(&mut selection, next);
 }
