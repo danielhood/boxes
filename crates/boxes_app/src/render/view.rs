@@ -106,17 +106,28 @@ pub fn setup_cameras(mut commands: Commands, mut active: ResMut<ActiveView>) {
     active.0 = OrthoView::Top;
 }
 
+fn shift_held(keyboard: &ButtonInput<KeyCode>) -> bool {
+    keyboard.pressed(KeyCode::ShiftLeft) || keyboard.pressed(KeyCode::ShiftRight)
+}
+
 pub fn switch_view_system(
     keyboard: Res<ButtonInput<KeyCode>>,
     mut active: ResMut<ActiveView>,
     cameras: Res<ViewCameras>,
     mut camera_query: Query<&mut Camera>,
 ) {
-    let next = if keyboard.just_pressed(KeyCode::Digit1) || keyboard.just_pressed(KeyCode::KeyT) {
+    // Digit keys are palette slots when Shift is held (P4); letter keys always switch views.
+    let next = if keyboard.just_pressed(KeyCode::KeyT) {
         Some(OrthoView::Top)
-    } else if keyboard.just_pressed(KeyCode::Digit2) || keyboard.just_pressed(KeyCode::KeyF) {
+    } else if keyboard.just_pressed(KeyCode::KeyF) {
         Some(OrthoView::Front)
-    } else if keyboard.just_pressed(KeyCode::Digit3) || keyboard.just_pressed(KeyCode::KeyL) {
+    } else if keyboard.just_pressed(KeyCode::KeyL) {
+        Some(OrthoView::Left)
+    } else if !shift_held(&keyboard) && keyboard.just_pressed(KeyCode::Digit1) {
+        Some(OrthoView::Top)
+    } else if !shift_held(&keyboard) && keyboard.just_pressed(KeyCode::Digit2) {
+        Some(OrthoView::Front)
+    } else if !shift_held(&keyboard) && keyboard.just_pressed(KeyCode::Digit3) {
         Some(OrthoView::Left)
     } else {
         None
@@ -150,4 +161,17 @@ pub fn cell_to_world(pos: boxes_sim::WorldPos) -> Vec3 {
         pos.y as f32 - WORLD_CENTER,
         pos.z as f32 - WORLD_CENTER,
     )
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn shift_held_when_either_shift_key_pressed() {
+        let mut keyboard = ButtonInput::<KeyCode>::default();
+        assert!(!shift_held(&keyboard));
+        keyboard.press(KeyCode::ShiftLeft);
+        assert!(shift_held(&keyboard));
+    }
 }

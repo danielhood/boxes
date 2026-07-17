@@ -1,6 +1,7 @@
 //! Factory overlay: type palette, inspector, sim controls, debug readout.
 
 use bevy::prelude::*;
+use bevy::render::camera::ClearColorConfig;
 
 use crate::input::{
     palette_slot_label, ActiveTool, InspectedCell, ToolState, ViewSlice,
@@ -115,6 +116,18 @@ fn spawn_button(
 }
 
 fn setup_factory_ui(mut commands: Commands, tools: Res<ToolState>, mut entities: ResMut<FactoryUiEntities>) {
+    // Dedicated overlay camera — grid cameras share order 0, so UI would otherwise bind to
+    // whichever 3D camera spawned last (left) and only render when that view is active.
+    commands.spawn((
+        Camera2d,
+        Camera {
+            order: 100,
+            clear_color: ClearColorConfig::None,
+            ..default()
+        },
+        IsDefaultUiCamera,
+    ));
+
     commands
         .spawn((
             FactoryUiRoot,
