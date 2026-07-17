@@ -182,7 +182,7 @@ fn wheel_input_system(
     }
 
     let steps = delta.signum() as i16;
-    let next = active.0.nudge_depth(selection.pos, -steps);
+    let next = active.0.nudge_depth(selection.pos, steps);
     set_selection(&mut selection, next);
 }
 
