@@ -11,7 +11,7 @@ pub use surface::{affected_chunks, visible_surface};
 #[allow(unused_imports)]
 pub use surface::unclipped_slice_depth;
 pub use view::{
-    ActiveView, GridCamera, GridCameraEntity, OrthoView, ViewCameraState, WORLD_CENTER,
+    ActiveView, GridCamera, GridCameraEntity, OrthoView, ScreenDir, ViewCameraState, WORLD_CENTER,
 };
 
 use bevy::prelude::*;

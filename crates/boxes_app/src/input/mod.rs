@@ -16,9 +16,7 @@ use bevy::prelude::*;
 use bevy::window::PrimaryWindow;
 use boxes_sim::{Cell, WorldPos};
 
-use crate::render::{
-    ActiveView, GridCamera, GridCameraEntity, PendingChunkRebuilds, ViewCameraState,
-};
+use crate::render::{ActiveView, GridCamera, GridCameraEntity, PendingChunkRebuilds, ScreenDir, ViewCameraState};
 use crate::sim_bridge::{queue_rebuild_for_positions, GridSimulation};
 
 /// Input plugin: picking, placement tools, slice offset, inspect.
@@ -111,19 +109,19 @@ fn keyboard_nav_system(
         return;
     }
 
-    let (du, dv) = if keyboard.just_pressed(KeyCode::ArrowUp) {
-        (0, 1)
+    let dir = if keyboard.just_pressed(KeyCode::ArrowUp) {
+        ScreenDir::Up
     } else if keyboard.just_pressed(KeyCode::ArrowDown) {
-        (0, -1)
+        ScreenDir::Down
     } else if keyboard.just_pressed(KeyCode::ArrowLeft) {
-        (-1, 0)
+        ScreenDir::Left
     } else if keyboard.just_pressed(KeyCode::ArrowRight) {
-        (1, 0)
+        ScreenDir::Right
     } else {
         return;
     };
 
-    let next = active.0.nudge_uv(selection.pos, du, dv);
+    let next = active.0.nudge_screen(selection.pos, dir);
     set_selection(&mut selection, next);
 }
 

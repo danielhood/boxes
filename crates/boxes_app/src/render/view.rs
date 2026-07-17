@@ -98,24 +98,68 @@ impl OrthoView {
 
     #[must_use]
     pub fn nudge_uv(self, pos: WorldPos, du: i16, dv: i16) -> WorldPos {
+        let (dx, dy, dz) = self.uv_delta(du, dv);
+        self.apply_delta(pos, dx, dy, dz)
+    }
+
+    /// Move selection along screen-space arrow keys for this face.
+    #[must_use]
+    pub fn nudge_screen(self, pos: WorldPos, dir: ScreenDir) -> WorldPos {
+        let (dx, dy, dz) = self.screen_delta(dir);
+        self.apply_delta(pos, dx, dy, dz)
+    }
+
+    fn apply_delta(self, pos: WorldPos, dx: i16, dy: i16, dz: i16) -> WorldPos {
         let max = WORLD_SIZE as u16 - 1;
         let clamp = |v: i32| v.clamp(0, i32::from(max)) as u16;
+        WorldPos::new(
+            clamp(i32::from(pos.x) + i32::from(dx)),
+            clamp(i32::from(pos.y) + i32::from(dy)),
+            clamp(i32::from(pos.z) + i32::from(dz)),
+        )
+    }
+
+    /// World-axis delta for abstract UV nudges (used by pick round-trips).
+    const fn uv_delta(self, du: i16, dv: i16) -> (i16, i16, i16) {
         match self {
-            Self::Top | Self::Bottom => WorldPos::new(
-                clamp(i32::from(pos.x) + i32::from(du)),
-                pos.y,
-                clamp(i32::from(pos.z) + i32::from(dv)),
-            ),
-            Self::Front | Self::Back => WorldPos::new(
-                clamp(i32::from(pos.x) + i32::from(du)),
-                clamp(i32::from(pos.y) + i32::from(dv)),
-                pos.z,
-            ),
-            Self::Left | Self::Right => WorldPos::new(
-                pos.x,
-                clamp(i32::from(pos.y) + i32::from(du)),
-                clamp(i32::from(pos.z) + i32::from(dv)),
-            ),
+            Self::Top | Self::Bottom => (du, 0, dv),
+            Self::Front | Self::Back => (du, dv, 0),
+            Self::Left | Self::Right => (0, du, dv),
+        }
+    }
+
+    /// World-axis delta matching on-screen arrow directions for this face.
+    const fn screen_delta(self, dir: ScreenDir) -> (i16, i16, i16) {
+        match (self, dir) {
+            (Self::Top, ScreenDir::Up) => (0, 0, -1),
+            (Self::Top, ScreenDir::Down) => (0, 0, 1),
+            (Self::Top, ScreenDir::Left) => (-1, 0, 0),
+            (Self::Top, ScreenDir::Right) => (1, 0, 0),
+
+            (Self::Bottom, ScreenDir::Up) => (0, 0, 1),
+            (Self::Bottom, ScreenDir::Down) => (0, 0, -1),
+            (Self::Bottom, ScreenDir::Left) => (-1, 0, 0),
+            (Self::Bottom, ScreenDir::Right) => (1, 0, 0),
+
+            (Self::Front, ScreenDir::Up) => (0, 1, 0),
+            (Self::Front, ScreenDir::Down) => (0, -1, 0),
+            (Self::Front, ScreenDir::Left) => (-1, 0, 0),
+            (Self::Front, ScreenDir::Right) => (1, 0, 0),
+
+            (Self::Back, ScreenDir::Up) => (0, 1, 0),
+            (Self::Back, ScreenDir::Down) => (0, -1, 0),
+            (Self::Back, ScreenDir::Left) => (1, 0, 0),
+            (Self::Back, ScreenDir::Right) => (-1, 0, 0),
+
+            (Self::Left, ScreenDir::Up) => (0, 1, 0),
+            (Self::Left, ScreenDir::Down) => (0, -1, 0),
+            (Self::Left, ScreenDir::Left) => (0, 0, -1),
+            (Self::Left, ScreenDir::Right) => (0, 0, 1),
+
+            (Self::Right, ScreenDir::Up) => (0, 1, 0),
+            (Self::Right, ScreenDir::Down) => (0, -1, 0),
+            (Self::Right, ScreenDir::Left) => (0, 0, 1),
+            (Self::Right, ScreenDir::Right) => (0, 0, -1),
         }
     }
 
@@ -347,5 +391,35 @@ mod tests {
         assert_eq!(OrthoView::Top.slice_depth(pos), 20);
         assert_eq!(OrthoView::Front.slice_depth(pos), 30);
         assert_eq!(OrthoView::Left.slice_depth(pos), 10);
+    }
+
+    #[test]
+    fn left_view_screen_left_moves_along_z() {
+        let pos = WorldPos::new(10, 5, 8);
+        let next = OrthoView::Left.nudge_screen(pos, ScreenDir::Left);
+        assert_eq!(next, WorldPos::new(10, 5, 7));
+        let next = OrthoView::Left.nudge_screen(pos, ScreenDir::Right);
+        assert_eq!(next, WorldPos::new(10, 5, 9));
+    }
+
+    #[test]
+    fn left_view_screen_up_moves_along_y() {
+        let pos = WorldPos::new(10, 5, 8);
+        let next = OrthoView::Left.nudge_screen(pos, ScreenDir::Up);
+        assert_eq!(next, WorldPos::new(10, 6, 8));
+    }
+
+    #[test]
+    fn top_view_screen_up_moves_toward_negative_z() {
+        let pos = WorldPos::new(10, 5, 8);
+        let next = OrthoView::Top.nudge_screen(pos, ScreenDir::Up);
+        assert_eq!(next, WorldPos::new(10, 5, 7));
+    }
+
+    #[test]
+    fn back_view_screen_left_moves_toward_positive_x() {
+        let pos = WorldPos::new(10, 5, 8);
+        let next = OrthoView::Back.nudge_screen(pos, ScreenDir::Left);
+        assert_eq!(next, WorldPos::new(11, 5, 8));
     }
 }

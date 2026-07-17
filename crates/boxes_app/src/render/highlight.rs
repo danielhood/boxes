@@ -6,10 +6,10 @@ use crate::input::SelectedCell;
 
 use super::view::cell_to_world;
 
-/// Rendered cell cube edge length (matches `GridMaterials` mesh).
-const CELL_SIZE: f32 = 0.95;
-/// Inset white border thickness.
-const BORDER: f32 = 0.04;
+/// Slightly larger than the 0.95 cell mesh so the border is not depth-occluded.
+const HIGHLIGHT_SIZE: f32 = 1.0;
+/// Border bar thickness.
+const BORDER: f32 = 0.05;
 
 #[derive(Component)]
 pub struct SelectionHighlight;
@@ -25,11 +25,12 @@ pub fn setup_selection_highlight(
     let highlight_mat = materials.add(StandardMaterial {
         base_color: Color::WHITE,
         unlit: true,
+        depth_bias: 2.0,
         ..default()
     });
 
-    let inner = CELL_SIZE - BORDER * 2.0;
-    let offset = CELL_SIZE / 2.0 - BORDER / 2.0;
+    let inner = HIGHLIGHT_SIZE - BORDER * 2.0;
+    let offset = HIGHLIGHT_SIZE / 2.0 - BORDER / 2.0;
 
     let x_bar = meshes.add(Cuboid::new(inner, BORDER, BORDER));
     let y_bar = meshes.add(Cuboid::new(BORDER, inner, BORDER));
@@ -93,7 +94,8 @@ mod tests {
     use super::*;
 
     #[test]
-    fn border_fits_inside_cell_mesh() {
-        assert!(BORDER * 2.0 < CELL_SIZE);
+    fn highlight_frame_larger_than_cell_mesh() {
+        assert!(HIGHLIGHT_SIZE > 0.95);
+        assert!(BORDER > 0.0);
     }
 }
