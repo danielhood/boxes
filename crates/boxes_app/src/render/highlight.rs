@@ -8,8 +8,8 @@ use super::view::cell_to_world;
 
 /// Slightly larger than the 0.95 cell mesh so the border is not depth-occluded.
 const HIGHLIGHT_SIZE: f32 = 1.0;
-/// Border bar thickness.
-const BORDER: f32 = 0.05;
+/// Border bar thickness (~1px wider than prior 0.05 at default 32-cell zoom).
+const BORDER: f32 = 0.085;
 
 #[derive(Component)]
 pub struct SelectionHighlight;
