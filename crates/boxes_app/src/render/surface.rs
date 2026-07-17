@@ -54,6 +54,23 @@ pub fn is_cell_visible_at_slice(pos: WorldPos, pose: ViewPose, slice_depth: u16)
     }
 }
 
+/// True when the cell lies on the active slice plane.
+#[must_use]
+pub fn is_on_slice(pos: WorldPos, pose: ViewPose, slice_depth: u16) -> bool {
+    cell_depth(pos, pose.face()) == slice_depth
+}
+
+/// Sort key for back-to-front draw order (farther cells first).
+#[must_use]
+pub fn depth_draw_order(pos: WorldPos, pose: ViewPose) -> u16 {
+    let depth = cell_depth(pos, pose.face());
+    if pose.slice_uses_lte() {
+        depth
+    } else {
+        u16::MAX - depth
+    }
+}
+
 /// Build the visible surface map for the active orthographic face, clipped at `slice_depth`.
 #[must_use]
 pub fn visible_surface(
@@ -84,6 +101,26 @@ pub fn visible_surface(
     surface
 }
 
+/// All non-empty cells visible at `slice_depth` (not just the outermost per column).
+#[must_use]
+pub fn visible_cells(
+    sim: &Simulation,
+    pose: ViewPose,
+    slice_depth: u16,
+) -> Vec<(WorldPos, Cell)> {
+    let mut cells = Vec::new();
+
+    for (pos, cell) in sim.world.chunks.iter_non_empty() {
+        if cell.is_empty() || !is_cell_visible_at_slice(pos, pose, slice_depth) {
+            continue;
+        }
+        cells.push((pos, cell));
+    }
+
+    cells.sort_by_key(|(pos, _)| depth_draw_order(*pos, pose));
+    cells
+}
+
 /// Chunks whose rendered instance buffers may change when `pos` updates.
 #[must_use]
 pub fn affected_chunks(pos: WorldPos, view: OrthoView) -> Vec<ChunkCoord> {
@@ -104,14 +141,14 @@ pub fn affected_chunks(pos: WorldPos, view: OrthoView) -> Vec<ChunkCoord> {
     }
 }
 
-/// Surface cells that render from a given chunk.
+/// Visible cells that render from a given chunk.
 #[must_use]
-pub fn surface_cells_for_chunk(
-    surface: &HashMap<(u16, u16), (WorldPos, Cell)>,
+pub fn cells_for_chunk(
+    cells: &[(WorldPos, Cell)],
     coord: ChunkCoord,
 ) -> Vec<(WorldPos, Cell)> {
-    surface
-        .values()
+    cells
+        .iter()
         .copied()
         .filter(|(pos, _)| pos.chunk_coord() == coord)
         .collect()
@@ -259,5 +296,32 @@ mod tests {
             OrthoView::Left.default_pose(),
             5
         ));
+    }
+
+    #[test]
+    fn visible_cells_includes_all_layers_in_column() {
+        let mut sim = Simulation::new();
+        sim.world
+            .set(WorldPos::new(10, 2, 10), make_generator(20, 1));
+        sim.world
+            .set(WorldPos::new(10, 5, 10), make_generator(20, 2));
+
+        let cells = visible_cells(&sim, OrthoView::Top.default_pose(), 5);
+        assert_eq!(cells.len(), 2);
+    }
+
+    #[test]
+    fn is_on_slice_matches_depth() {
+        let pose = OrthoView::Top.default_pose();
+        assert!(is_on_slice(WorldPos::new(10, 5, 10), pose, 5));
+        assert!(!is_on_slice(WorldPos::new(10, 4, 10), pose, 5));
+    }
+
+    #[test]
+    fn depth_draw_order_puts_slice_cells_last_for_top_view() {
+        let pose = OrthoView::Top.default_pose();
+        let near = depth_draw_order(WorldPos::new(10, 5, 10), pose);
+        let far = depth_draw_order(WorldPos::new(10, 2, 10), pose);
+        assert!(far < near);
     }
 }

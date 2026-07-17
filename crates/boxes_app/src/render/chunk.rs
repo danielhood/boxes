@@ -6,7 +6,7 @@ use bevy::prelude::*;
 use boxes_sim::{Cell, ChunkCoord, WorldPos};
 
 use super::materials::GridMaterials;
-use super::surface::{surface_cells_for_chunk, visible_surface};
+use super::surface::{cells_for_chunk, is_on_slice, visible_cells};
 use super::view::{cell_to_world, ActiveView, ViewPose};
 use crate::input::{slice_depth, SelectedCell};
 
@@ -83,11 +83,11 @@ pub fn rebuild_chunk_instances(
     }
 
     let slice_depth = slice_depth(active.pose, &selection);
-    let surface = visible_surface(&sim.0, active.pose, slice_depth);
+    let cells = visible_cells(&sim.0, active.pose, slice_depth);
 
     let targets: HashSet<ChunkCoord> = if pending.rebuild_all {
-        surface
-            .values()
+        cells
+            .iter()
             .map(|(pos, _)| pos.chunk_coord())
             .collect()
     } else {
@@ -104,14 +104,15 @@ pub fn rebuild_chunk_instances(
             }
         }
 
-        let cells = surface_cells_for_chunk(&surface, coord);
-        if cells.is_empty() {
+        let chunk_cells = cells_for_chunk(&cells, coord);
+        if chunk_cells.is_empty() {
             continue;
         }
 
-        let mut entities = Vec::with_capacity(cells.len());
-        for (pos, cell) in cells {
-            let entity = spawn_instance(&mut commands, &materials, coord, pos, cell);
+        let mut entities = Vec::with_capacity(chunk_cells.len());
+        for (pos, cell) in chunk_cells {
+            let on_slice = is_on_slice(pos, active.pose, slice_depth);
+            let entity = spawn_instance(&mut commands, &materials, coord, pos, cell, on_slice);
             entities.push(entity);
         }
 
@@ -126,11 +127,12 @@ fn spawn_instance(
     chunk: ChunkCoord,
     pos: WorldPos,
     cell: Cell,
+    on_slice: bool,
 ) -> Entity {
     commands
         .spawn((
             Mesh3d(materials.mesh.clone()),
-            MeshMaterial3d(materials.material_for(cell.type_id)),
+            MeshMaterial3d(materials.material_for(cell.type_id, on_slice)),
             Transform::from_translation(cell_to_world(pos)),
             GridInstance { chunk },
         ))
@@ -143,20 +145,20 @@ mod tests {
     use boxes_sim::{make_generator, Simulation};
 
     use super::super::OrthoView;
-    use super::super::surface::unclipped_slice_depth;
+    use super::super::surface::{cells_for_chunk, unclipped_slice_depth, visible_cells};
 
     #[test]
-    fn surface_cells_grouped_by_chunk() {
+    fn cells_grouped_by_chunk() {
         let mut sim = Simulation::new();
         sim.world
             .set(WorldPos::new(33, 40, 33), make_generator(20, 1));
-        let surface = visible_surface(
+        let cells = visible_cells(
             &sim,
             OrthoView::Top.default_pose(),
             unclipped_slice_depth(OrthoView::Top),
         );
         let coord = WorldPos::new(33, 40, 33).chunk_coord();
-        let cells = surface_cells_for_chunk(&surface, coord);
-        assert_eq!(cells.len(), 1);
+        let chunk_cells = cells_for_chunk(&cells, coord);
+        assert_eq!(chunk_cells.len(), 1);
     }
 }
