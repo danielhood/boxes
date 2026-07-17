@@ -13,7 +13,7 @@ Single-player, offline desktop factory game for Linux. Manipulate a large 3D gri
 | **Simulation** | 20 Hz discrete ticks, 8 staggered phases; event-driven neighbor updates |
 | **Stack** | Rust simulation core (`boxes_sim`) + [Bevy](https://bevyengine.org/) rendering and input (`boxes_app`) |
 
-See [docs/planning/initial-planning.md](docs/planning/initial-planning.md) for full rationale, architecture, and open decisions.
+See [docs/planning/initial-planning.md](docs/planning/initial-planning.md) for full rationale, architecture, and open decisions. [Possible next steps](docs/planning/next-steps.md) captures post-P5 design ideas (selection UX, theme, input remap, content expansion).
 
 ## Documentation
 

@@ -1,7 +1,7 @@
 # Initial planning — Boxes
 
 **Status:** active  
-**Last updated:** 2026-07-16  
+**Last updated:** 2026-07-17  
 **Related:** [roadmap/active.md](../roadmap/active.md), [roadmap/completed.md](../roadmap/completed.md), [roadmap/future.md](../roadmap/future.md)
 
 ## Implementation status
@@ -165,12 +165,24 @@ Success depends on **incremental updates** (dirty/event queues), not scanning al
 
 ## Open decisions (next specs)
 
-- Exact **cell record layout** (bytes per cell, flags, timers)
-- **Chunk size** (32³ vs 64³)
-- **Sparse vs dense-within-chunk** representation for 45% fill
-- **Save/load** format (compressed chunk blobs)
-- **Bevy UI vs egui** for factory dashboards
-- Initial **cell type catalog** and neighbor rules
+Resolved in P1–P5 specs where noted. Still open:
+
+### Technical
+
+- **Save/load** format (compressed chunk blobs) — P6
+- **Bevy UI vs egui** for heavy analytics — factory overlay uses Bevy UI (P5)
+
+### Product & theme
+
+Captured in detail in [next-steps.md](next-steps.md):
+
+- **Central game theme** — fiction, tone, visual identity; current build is unthemed factory nav
+- **Vitality / lose condition** — environment should stay “alive”; without player interaction it tends to “die” (exact rules TBD)
+- **Progression** — how sessions or campaigns advance; win state TBD
+- **Opposition model** — how the system pushes back **without moving creatures** (field decay, competing subsystems, etc.)
+- **Selection UX** — always-one selected cell; views center on selection; future multi-select for batch ops
+- **Pointer remap** — LMB select; RMB context menu vs tool-apply (TBD)
+- **Cell catalog** — expand beyond v1 base types; derived types and themed world gen after theme lock
 
 ## Glossary
 

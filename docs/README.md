@@ -45,6 +45,7 @@ Each doc should start with:
 ## Quick links
 
 - [Initial planning](planning/initial-planning.md)
+- [Possible next steps](planning/next-steps.md)
 - [Active roadmap](roadmap/active.md)
 - [Completed phases](roadmap/completed.md)
 - [Future phases](roadmap/future.md)
