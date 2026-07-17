@@ -97,11 +97,6 @@ pub fn setup_cameras(mut commands: Commands, mut active: ResMut<ActiveView>) {
         ))
         .id();
 
-    commands.spawn(DirectionalLight {
-        illuminance: light_consts::lux::OVERCAST_DAY,
-        ..default()
-    });
-
     commands.insert_resource(ViewCameras { top, front, left });
     active.0 = OrthoView::Top;
 }
