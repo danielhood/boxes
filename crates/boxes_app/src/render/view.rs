@@ -90,6 +90,18 @@ impl ViewPose {
         self.face().nudge_depth(pos, delta)
     }
 
+    /// Sign for stepping one cell forward into the scene (scroll up / `]`).
+    #[must_use]
+    pub fn depth_step_forward_sign(self) -> i16 {
+        if self.slice_uses_lte() { -1 } else { 1 }
+    }
+
+    /// Map a forward/backward step count to the depth-axis delta for `nudge_depth`.
+    #[must_use]
+    pub fn depth_step_delta(self, forward_steps: i16) -> i16 {
+        forward_steps * self.depth_step_forward_sign()
+    }
+
     #[must_use]
     pub fn nudge_screen(self, pos: WorldPos, dir: ScreenDir) -> WorldPos {
         let (dx, dy, dz) = self.screen_delta(dir);
@@ -581,5 +593,40 @@ mod tests {
         assert_eq!(OrthoView::Top.slice_depth(pos), 20);
         assert_eq!(OrthoView::Front.slice_depth(pos), 30);
         assert_eq!(OrthoView::Left.slice_depth(pos), 10);
+    }
+
+    #[test]
+    fn depth_step_forward_sign_for_default_faces() {
+        let cases = [
+            (OrthoView::Top, -1),
+            (OrthoView::Bottom, 1),
+            (OrthoView::Left, 1),
+            (OrthoView::Right, -1),
+            (OrthoView::Back, 1),
+            (OrthoView::Front, -1),
+        ];
+        for (face, expected) in cases {
+            assert_eq!(
+                face.default_pose().depth_step_forward_sign(),
+                expected,
+                "{face:?}"
+            );
+        }
+    }
+
+    #[test]
+    fn depth_step_forward_moves_into_scene_for_top_view() {
+        let pose = OrthoView::Top.default_pose();
+        let pos = WorldPos::new(10, 10, 10);
+        let next = pose.nudge_depth(pos, pose.depth_step_delta(1));
+        assert_eq!(next, WorldPos::new(10, 9, 10));
+    }
+
+    #[test]
+    fn depth_step_forward_moves_into_scene_for_bottom_view() {
+        let pose = OrthoView::Bottom.default_pose();
+        let pos = WorldPos::new(10, 10, 10);
+        let next = pose.nudge_depth(pos, pose.depth_step_delta(1));
+        assert_eq!(next, WorldPos::new(10, 11, 10));
     }
 }
