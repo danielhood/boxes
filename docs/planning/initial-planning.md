@@ -180,8 +180,8 @@ Captured in detail in [next-steps.md](next-steps.md):
 - **Vitality / lose condition** — environment should stay “alive”; without player interaction it tends to “die” (exact rules TBD)
 - **Progression** — how sessions or campaigns advance; win state TBD
 - **Opposition model** — how the system pushes back **without moving creatures** (field decay, competing subsystems, etc.)
-- **Selection UX** — always-one selected cell; views center on selection; future multi-select for batch ops
-- **Pointer remap** — LMB select; RMB context menu vs tool-apply (TBD)
+- **Selection UX** — [P5.1 spec](../specs/P5.1-selection-view-nav.md); future multi-select for batch ops
+- **Pointer remap** — resolved in P5.1 (LMB select, RMB tool apply)
 - **Cell catalog** — expand beyond v1 base types; derived types and themed world gen after theme lock
 
 ## Glossary

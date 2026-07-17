@@ -50,6 +50,7 @@ Each doc should start with:
 - [Completed phases](roadmap/completed.md)
 - [Future phases](roadmap/future.md)
 - [P4 input + tools spec](specs/P4-input-tools.md) (shipped)
+- [P5.1 selection + view navigation spec](specs/P5.1-selection-view-nav.md) (draft)
 - [README — app controls](../../README.md#using-the-app) and [BUILD.md](../../BUILD.md) at repo root
 
 ## Agent skills
