@@ -194,7 +194,6 @@ fn pointer_select_system(
     camera_entity: Res<GridCameraEntity>,
     camera_query: Query<(&Camera, &GlobalTransform), With<GridCamera>>,
     mut selection: ResMut<SelectedCell>,
-    sim: Res<GridSimulation>,
 ) {
     let select_held = mouse.pressed(MouseButton::Left);
     let select_pressed = mouse.just_pressed(MouseButton::Left);
@@ -215,12 +214,7 @@ fn pointer_select_system(
     };
 
     let depth = slice_depth(active.0, &selection);
-    let Some(pos) = pick_surface_cell(&sim.0, active.0, depth, origin, direction) else {
-        if select_pressed {
-            if let Some(pos) = pick::pick_slice_cell(active.0, depth, origin, direction) {
-                set_selection(&mut selection, pos);
-            }
-        }
+    let Some(pos) = pick_slice_cell(active.0, depth, origin, direction) else {
         return;
     };
 

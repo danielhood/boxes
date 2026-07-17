@@ -294,6 +294,25 @@ mod tests {
     }
 
     #[test]
+    fn slice_pick_targets_depth_not_column_surface() {
+        let mut sim = Simulation::new();
+        sim.world
+            .set(WorldPos::new(10, 8, 10), make_generator(20, 1));
+        sim.world
+            .set(WorldPos::new(10, 12, 10), make_generator(20, 2));
+
+        let origin = Vec3::new(10.0 - WORLD_CENTER, 100.0, 10.0 - WORLD_CENTER);
+        let direction = Vec3::NEG_Y;
+        let slice = 14_u16;
+
+        let surface = pick_surface_cell(&sim, OrthoView::Top, slice, origin, direction).unwrap();
+        assert_eq!(surface, WorldPos::new(10, 12, 10));
+
+        let at_slice = pick_slice_cell(OrthoView::Top, slice, origin, direction).unwrap();
+        assert_eq!(at_slice, WorldPos::new(10, 14, 10));
+    }
+
+    #[test]
     fn top_ray_pick_test_vector() {
         let origin = Vec3::new(10.0 - WORLD_CENTER, 100.0, 10.0 - WORLD_CENTER);
         let direction = Vec3::NEG_Y;
