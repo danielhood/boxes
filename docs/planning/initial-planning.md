@@ -13,8 +13,9 @@
 | P2 — Cell types | **shipped** (2026-07-16) | [completed log](../roadmap/completed.md) — generator / transformer / aggregator |
 | P3 — Rendering | **shipped** (2026-07-16) | [completed log](../roadmap/completed.md) — chunked instancing + ortho views |
 | P4 — Input + tools | **shipped** (2026-07-16) | [completed log](../roadmap/completed.md) — `InputPlugin`, slice clip render, [PR #8](https://github.com/danielhood/boxes/pull/8) |
-| P5 — Factory UI | **active** | [active roadmap](../roadmap/active.md) |
-| P6+ | backlog | [future roadmap](../roadmap/future.md) |
+| P5 — Factory UI | **shipped** (2026-07-16) | [completed log](../roadmap/completed.md) — `FactoryUiPlugin`, sim playback controls |
+| P6 — Persistence | **active** | [active roadmap](../roadmap/active.md) |
+| P7+ | backlog | [future roadmap](../roadmap/future.md) |
 
 ## Summary
 

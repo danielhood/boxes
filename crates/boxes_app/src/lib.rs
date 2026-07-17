@@ -3,12 +3,14 @@
 mod input;
 mod render;
 mod sim_bridge;
+mod ui;
 
 use bevy::prelude::*;
 
 pub use input::{ActiveTool, InputPlugin, InspectedCell, PalettePreset, ToolState, ViewSlice};
 pub use render::{ActiveView, GridRenderPlugin, OrthoView};
-pub use sim_bridge::GridSimulation;
+pub use sim_bridge::{GridSimulation, SimPlayback, SimSpeed, SimTickStats};
+pub use ui::FactoryUiPlugin;
 
 use sim_bridge::{setup_simulation, sim_step_system};
 
@@ -18,7 +20,7 @@ pub struct BoxesAppPlugin;
 impl Plugin for BoxesAppPlugin {
     fn build(&self, app: &mut App) {
         app.insert_resource(ClearColor(Color::srgb(0.08, 0.09, 0.11)))
-            .add_plugins((GridRenderPlugin, InputPlugin))
+            .add_plugins((GridRenderPlugin, InputPlugin, FactoryUiPlugin))
             .add_systems(Startup, setup_simulation)
             .add_systems(Update, sim_step_system);
     }

@@ -10,7 +10,6 @@ Backlog phases are **not started**. Promote a row to [active.md](active.md) when
 
 | Slice | Summary | Spec |
 |-------|---------|------|
-| P6.1 | Save/load world — compressed chunk blobs, metadata header | _TBD: P6-persistence.md_ |
 | P6.2 | Autosave + named snapshots | _TBD_ |
 
 ## P7 — Scale and performance

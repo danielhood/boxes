@@ -48,3 +48,11 @@ Shipped work is logged here with links to specs and merge PRs. Promote the next 
 | P4 | Ray pick, place/erase/inspect, depth slice with render clip, drag placement | [P4-input-tools](../specs/P4-input-tools.md) | [PR #8](https://github.com/danielhood/boxes/pull/8) |
 
 **Exit criteria met:** Orthographic ray pick per view (unit test vectors); place at slice depth / erase+inspect on clipped surface; `visible_surface` hides cells between slice and camera; slice nudge rebuilds render; place/erase queue chunk rebuilds; view switch is render-only; `InputPlugin` + `BUILD.md` usage docs.
+
+## P5 — Factory UI (shipped 2026-07-16)
+
+| Slice | Summary | Spec | Shipped |
+|-------|---------|------|---------|
+| P5 | Type palette, cell inspector, pause/step/speed, throughput HUD, debug overlay | [P5-factory-ui](../specs/P5-factory-ui.md) | _PR pending_ |
+
+**Exit criteria met:** UI palette selects `ToolState` slot for P4 placement; inspector shows live picked-cell state; pause stops sim stepping; step advances exactly one tick; speed multiplier on fixed timestep; optional chunk debug readout.

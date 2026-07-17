@@ -24,18 +24,22 @@ impl GridMaterials {
             mesh,
             generator: materials.add(StandardMaterial {
                 base_color: Color::srgb(0.92, 0.55, 0.18),
+                unlit: true,
                 ..default()
             }),
             transformer: materials.add(StandardMaterial {
                 base_color: Color::srgb(0.28, 0.68, 0.95),
+                unlit: true,
                 ..default()
             }),
             aggregator: materials.add(StandardMaterial {
                 base_color: Color::srgb(0.55, 0.86, 0.38),
+                unlit: true,
                 ..default()
             }),
             default: materials.add(StandardMaterial {
                 base_color: Color::srgb(0.45, 0.55, 0.75),
+                unlit: true,
                 ..default()
             }),
         };
