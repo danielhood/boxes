@@ -12,12 +12,20 @@ Ideas not yet phased — see [next-steps.md](../planning/next-steps.md) for rati
 
 | Area | Summary | Blocked by |
 |------|---------|------------|
-| UI | Always-one selected cell; all views center on selection | — |
 | UI | Multi-select for batch operations | Ops catalog defined |
-| Input | LMB = select; RMB = context menu or tool apply | Selection model |
 | Design | Central theme, vitality/lose, progression, non-creature opposition | Design pass |
 | Content | Derived cell types from v1 bases | Theme |
 | Content | Themed world gen (replace demo seed) | Theme, cell catalog |
+
+## P5.1 — Selection and view navigation
+
+| Slice | Summary | Spec |
+|-------|---------|------|
+| P5.1 | Persistent selected cell, six-face view orbit, selection-centered zoom, pointer remap, help overlay | [P5.1-selection-view-nav.md](../specs/P5.1-selection-view-nav.md) |
+
+**Exit criteria:** One cell always selected; views center on selection; Ctrl+arrows orbit faces; LMB select / RMB tool; inspector follows selection; `?` help overlay.
+
+---
 
 ## P6 — Persistence
 

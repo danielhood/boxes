@@ -10,11 +10,14 @@ Exploratory notes captured after P5 shipped. **Not scheduled** — promote items
 
 ## UI refinement — selection model
 
+**Spec:** [P5.1 — Selection and view navigation](../specs/P5.1-selection-view-nav.md) (draft, 2026-07-17)
+
 ### Always-selected cell
 
 - Maintain **one cell always selected** in the UI (distinct from transient inspect readout).
 - **All orthographic views center on the selected cell** when switching views or when selection changes.
 - Implies a persistent `SelectedCell` (or similar) resource, camera framing per view, and inspector/panel binding to selection rather than only RMB picks.
+- Initial selection: random non-empty cell from demo world gen.
 
 ### Multi-select (later)
 
@@ -25,21 +28,14 @@ Exploratory notes captured after P5 shipped. **Not scheduled** — promote items
 
 ## Input remap — pointer roles
 
-Current (P4/P5): **LMB** applies the active tool; **RMB** inspects.
-
-Proposed direction:
+**Resolved in [P5.1 spec](../specs/P5.1-selection-view-nav.md):**
 
 | Pointer | Role |
 |---------|------|
 | **LMB** | **Select** cell (update persistent selection; primary navigation) |
-| **RMB** | **Context menu** *or* **apply active tool** (pick one in spec) |
+| **RMB** | **Apply active tool** (place / erase / inspect mode) |
 
-Open choice for RMB:
-
-1. **Context menu** — place / erase / inspect / future batch actions at cursor.
-2. **Tool apply** — keep P4 tool behavior on RMB (or a modifier), freeing LMB for selection only.
-
-Keyboard shortcuts (`P` / `E` / `I`, palette, views) can remain; remap should be documented in README and eventually P9 keybindings.
+Context menu on RMB is deferred. View switching moves to **Ctrl + arrow keys**; `T` snaps to Top. Slice step on `[` / `]` / wheel; zoom on **Ctrl + wheel**. Help overlay on `?`.
 
 ---
 
@@ -91,8 +87,9 @@ theme + win/lose sketch  →  cell catalog (P8)  →  themed world gen  →  bat
 
 | Idea | Likely home | Depends on |
 |------|-------------|------------|
-| Persistent selection + view centering | New UI slice or P5 follow-up | Camera framing API |
-| Pointer remap (LMB select) | P9 keybindings / input spec | Selection model |
+| Persistent selection + view centering | [P5.1](../specs/P5.1-selection-view-nav.md) | Camera framing API |
+| Pointer remap (LMB select) | [P5.1](../specs/P5.1-selection-view-nav.md) | — |
+| View orbit (Ctrl+arrows), zoom, help overlay | [P5.1](../specs/P5.1-selection-view-nav.md) | Selection model |
 | Multi-select + batch ops | P8 factory depth | Ops catalog |
 | Theme + progression doc | Planning | Design pass |
 | Derived cell types | P8.1 cell catalog | Theme |
