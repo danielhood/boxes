@@ -114,7 +114,7 @@ impl ViewPose {
     }
 
     pub fn rotate(&mut self, dir: ScreenDir) {
-        let mut angle = match dir {
+        let angle = match dir {
             ScreenDir::Up => -std::f32::consts::FRAC_PI_2,
             ScreenDir::Down => std::f32::consts::FRAC_PI_2,
             ScreenDir::Left => -std::f32::consts::FRAC_PI_2,
@@ -122,29 +122,13 @@ impl ViewPose {
         };
         let axis = match dir {
             ScreenDir::Up | ScreenDir::Down => self.screen_right(),
-            ScreenDir::Left | ScreenDir::Right => self.horizontal_rotation_axis(),
+            ScreenDir::Left | ScreenDir::Right => self.up,
         };
-        if matches!(dir, ScreenDir::Left | ScreenDir::Right)
-            && self.view_dir.x > 0.9
-            && self.up.dot(Vec3::Y).abs() < 0.9
-        {
-            angle = -angle;
-        }
         let q = Quat::from_axis_angle(axis, angle);
         self.view_dir = snap_cardinal(q * self.view_dir);
         self.up = snap_cardinal(q * self.up);
         self.u_axis = snap_cardinal(q * self.u_axis);
         self.v_axis = snap_cardinal(q * self.v_axis);
-    }
-
-    fn horizontal_rotation_axis(self) -> Vec3 {
-        if self.view_dir.y.abs() > 0.9 {
-            self.up
-        } else if self.view_dir.x > 0.9 && self.up.dot(Vec3::Y).abs() < 0.9 {
-            self.screen_right()
-        } else {
-            self.up
-        }
     }
 
     #[must_use]
@@ -498,15 +482,33 @@ mod tests {
     }
 
     #[test]
-    fn top_right_twice_moves_to_back_with_normal_y() {
-        let active = rotate(rotate(ActiveView::default(), ScreenDir::Right), ScreenDir::Right);
-        assert_eq!(active.face(), OrthoView::Back);
-        assert!(
-            active.pose.up.dot(Vec3::Y) > 0.0 || active.pose.up.dot(Vec3::X).abs() > 0.0,
-            "expected non-inverted back orientation, got {:?}",
-            active.pose.up
-        );
-        assert_ne!(active.pose.up, Vec3::NEG_Y);
+    fn repeated_right_from_top_cycles_equatorial_faces() {
+        let mut active = ActiveView::default();
+        for expected in [
+            OrthoView::Right,
+            OrthoView::Bottom,
+            OrthoView::Left,
+            OrthoView::Top,
+            OrthoView::Right,
+        ] {
+            active = rotate(active, ScreenDir::Right);
+            assert_eq!(active.face(), expected);
+        }
+    }
+
+    #[test]
+    fn repeated_left_from_top_cycles_equatorial_faces() {
+        let mut active = ActiveView::default();
+        for expected in [
+            OrthoView::Left,
+            OrthoView::Bottom,
+            OrthoView::Right,
+            OrthoView::Top,
+            OrthoView::Left,
+        ] {
+            active = rotate(active, ScreenDir::Left);
+            assert_eq!(active.face(), expected);
+        }
     }
 
     #[test]
