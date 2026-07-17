@@ -53,6 +53,6 @@ Shipped work is logged here with links to specs and merge PRs. Promote the next 
 
 | Slice | Summary | Spec | Shipped |
 |-------|---------|------|---------|
-| P5 | Type palette, cell inspector, pause/step/speed, throughput HUD, debug overlay | [P5-factory-ui](../specs/P5-factory-ui.md) | _PR pending_ |
+| P5 | Type palette, cell inspector, pause/step/speed, throughput HUD, debug overlay | [P5-factory-ui](../specs/P5-factory-ui.md) | [PR #9](https://github.com/danielhood/boxes/pull/9) |
 
 **Exit criteria met:** UI palette selects `ToolState` slot for P4 placement; inspector shows live picked-cell state; pause stops sim stepping; step advances exactly one tick; speed multiplier on fixed timestep; optional chunk debug readout.

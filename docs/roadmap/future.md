@@ -1,10 +1,23 @@
 # Future phases
 
 **Status:** active  
-**Last updated:** 2026-07-16  
-**Related:** [active roadmap](active.md), [completed phases](completed.md), [initial planning](../planning/initial-planning.md)
+**Last updated:** 2026-07-17  
+**Related:** [active roadmap](active.md), [completed phases](completed.md), [initial planning](../planning/initial-planning.md), [possible next steps](../planning/next-steps.md)
 
 Backlog phases are **not started**. Promote a row to [active.md](active.md) when it becomes current work; add or refine a spec under `docs/specs/` before implementation.
+
+## Design backlog (pre-spec)
+
+Ideas not yet phased — see [next-steps.md](../planning/next-steps.md) for rationale and dependencies.
+
+| Area | Summary | Blocked by |
+|------|---------|------------|
+| UI | Always-one selected cell; all views center on selection | — |
+| UI | Multi-select for batch operations | Ops catalog defined |
+| Input | LMB = select; RMB = context menu or tool apply | Selection model |
+| Design | Central theme, vitality/lose, progression, non-creature opposition | Design pass |
+| Content | Derived cell types from v1 bases | Theme |
+| Content | Themed world gen (replace demo seed) | Theme, cell catalog |
 
 ## P6 — Persistence
 
@@ -24,16 +37,17 @@ Backlog phases are **not started**. Promote a row to [active.md](active.md) when
 
 | Slice | Summary | Spec |
 |-------|---------|------|
-| P8.1 | Additional cell types and composition rules | _TBD: P8-cell-catalog.md_ |
+| P8.1 | Additional cell types and composition rules (base → derived) | _TBD: P8-cell-catalog.md_ |
 | P8.2 | Throughput analytics — rates, bottlenecks, utilization | _TBD_ |
 | P8.3 | Blueprint copy/paste regions | _TBD_ |
+| P8.4 | Themed world generation (post-theme) | _TBD_ |
 
 ## P9 — Polish and release
 
 | Slice | Summary | Spec |
 |-------|---------|------|
 | P9.1 | Linux release build + packaging | _TBD: P9-release.md_ |
-| P9.2 | Options, keybindings, accessibility pass | _TBD_ |
+| P9.2 | Options, keybindings, accessibility pass (incl. LMB/RMB remap) | _TBD_ |
 
 ## Explicitly out of scope (v1)
 
