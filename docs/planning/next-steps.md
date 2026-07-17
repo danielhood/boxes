@@ -10,7 +10,7 @@ Exploratory notes captured after P5 shipped. **Not scheduled** — promote items
 
 ## UI refinement — selection model
 
-**Spec:** [P5.1 — Selection and view navigation](../specs/P5.1-selection-view-nav.md) (draft, 2026-07-17)
+**Spec:** [P5.1 — Selection and view navigation](../specs/P5.1-selection-view-nav.md) (shipped 2026-07-17)
 
 ### Always-selected cell
 

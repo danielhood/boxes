@@ -14,6 +14,7 @@
 | P3 — Rendering | **shipped** (2026-07-16) | [completed log](../roadmap/completed.md) — chunked instancing + ortho views |
 | P4 — Input + tools | **shipped** (2026-07-16) | [completed log](../roadmap/completed.md) — `InputPlugin`, slice clip render, [PR #8](https://github.com/danielhood/boxes/pull/8) |
 | P5 — Factory UI | **shipped** (2026-07-16) | [completed log](../roadmap/completed.md) — `FactoryUiPlugin`, sim playback controls |
+| P5.1 — Selection & view nav | **shipped** (2026-07-17) | [completed log](../roadmap/completed.md) — [P5.1 spec](../specs/P5.1-selection-view-nav.md) |
 | P6 — Persistence | **active** | [active roadmap](../roadmap/active.md) |
 | P7+ | backlog | [future roadmap](../roadmap/future.md) |
 

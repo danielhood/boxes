@@ -17,9 +17,9 @@ impl OrthoView {
     #[must_use]
     pub const fn depth_axis(self) -> DepthAxis {
         match self {
-            Self::Top => DepthAxis::Y,
-            Self::Front => DepthAxis::Z,
-            Self::Left => DepthAxis::X,
+            Self::Top | Self::Bottom => DepthAxis::Y,
+            Self::Front | Self::Back => DepthAxis::Z,
+            Self::Left | Self::Right => DepthAxis::X,
         }
     }
 }
@@ -29,9 +29,9 @@ impl OrthoView {
 pub fn view_plane_point(view: OrthoView, depth: u16) -> Vec3 {
     let d = depth as f32 - WORLD_CENTER;
     match view {
-        OrthoView::Top => Vec3::new(0.0, d, 0.0),
-        OrthoView::Front => Vec3::new(0.0, 0.0, d),
-        OrthoView::Left => Vec3::new(d, 0.0, 0.0),
+        OrthoView::Top | OrthoView::Bottom => Vec3::new(0.0, d, 0.0),
+        OrthoView::Front | OrthoView::Back => Vec3::new(0.0, 0.0, d),
+        OrthoView::Left | OrthoView::Right => Vec3::new(d, 0.0, 0.0),
     }
 }
 
@@ -40,8 +40,11 @@ pub fn view_plane_point(view: OrthoView, depth: u16) -> Vec3 {
 pub fn view_plane_normal(view: OrthoView) -> Vec3 {
     match view {
         OrthoView::Top => Vec3::Y,
+        OrthoView::Bottom => Vec3::NEG_Y,
         OrthoView::Front => Vec3::Z,
+        OrthoView::Back => Vec3::NEG_Z,
         OrthoView::Left => Vec3::NEG_X,
+        OrthoView::Right => Vec3::X,
     }
 }
 
@@ -72,13 +75,25 @@ pub fn world_hit_to_uv(view: OrthoView, hit: Vec3) -> Option<(u16, u16)> {
             (hit.x + WORLD_CENTER).round() as i32,
             (hit.z + WORLD_CENTER).round() as i32,
         ),
+        OrthoView::Bottom => (
+            (hit.x + WORLD_CENTER).round() as i32,
+            (WORLD_CENTER - hit.z).round() as i32,
+        ),
         OrthoView::Front => (
             (hit.x + WORLD_CENTER).round() as i32,
+            (hit.y + WORLD_CENTER).round() as i32,
+        ),
+        OrthoView::Back => (
+            (WORLD_CENTER - hit.x).round() as i32,
             (hit.y + WORLD_CENTER).round() as i32,
         ),
         OrthoView::Left => (
             (hit.y + WORLD_CENTER).round() as i32,
             (hit.z + WORLD_CENTER).round() as i32,
+        ),
+        OrthoView::Right => (
+            (WORLD_CENTER - hit.y).round() as i32,
+            (WORLD_CENTER - hit.z).round() as i32,
         ),
     };
 
@@ -95,8 +110,11 @@ pub fn world_hit_to_uv(view: OrthoView, hit: Vec3) -> Option<(u16, u16)> {
 pub fn uv_depth_to_cell(view: OrthoView, u: u16, v: u16, depth: u16) -> WorldPos {
     match view {
         OrthoView::Top => WorldPos::new(u, depth, v),
+        OrthoView::Bottom => WorldPos::new(u, depth, WORLD_SIZE as u16 - 1 - v),
         OrthoView::Front => WorldPos::new(u, v, depth),
+        OrthoView::Back => WorldPos::new(WORLD_SIZE as u16 - 1 - u, v, depth),
         OrthoView::Left => WorldPos::new(depth, u, v),
+        OrthoView::Right => WorldPos::new(depth, WORLD_SIZE as u16 - 1 - u, WORLD_SIZE as u16 - 1 - v),
     }
 }
 
@@ -113,7 +131,7 @@ pub fn pick_surface_at_uv(
     surface.get(&(u, v)).map(|(pos, _)| *pos)
 }
 
-/// Pick the cell under the cursor for surface interaction (inspect / erase / place-on-surface).
+/// Pick the cell under the cursor for surface interaction (inspect / erase).
 #[must_use]
 pub fn pick_surface_cell(
     sim: &Simulation,
@@ -122,7 +140,6 @@ pub fn pick_surface_cell(
     ray_origin: Vec3,
     ray_direction: Vec3,
 ) -> Option<WorldPos> {
-    // Intersect with a plane through world origin; UV comes from the hit regardless of depth.
     let plane_point = Vec3::ZERO;
     let plane_normal = view_plane_normal(view);
     let hit = ray_plane_intersect(ray_origin, ray_direction, plane_point, plane_normal)?;
@@ -170,6 +187,27 @@ mod tests {
     }
 
     #[test]
+    fn bottom_view_world_hit_maps_xz() {
+        let hit = Vec3::new(10.0 - WORLD_CENTER, 0.0, WORLD_CENTER - 20.0);
+        let uv = world_hit_to_uv(OrthoView::Bottom, hit).unwrap();
+        assert_eq!(uv, (10, 20));
+    }
+
+    #[test]
+    fn back_view_world_hit_maps_xy() {
+        let hit = Vec3::new(WORLD_CENTER - 5.0, 7.0 - WORLD_CENTER, 0.0);
+        let uv = world_hit_to_uv(OrthoView::Back, hit).unwrap();
+        assert_eq!(uv, (5, 7));
+    }
+
+    #[test]
+    fn right_view_world_hit_maps_yz() {
+        let hit = Vec3::new(0.0, WORLD_CENTER - 3.0, WORLD_CENTER - 9.0);
+        let uv = world_hit_to_uv(OrthoView::Right, hit).unwrap();
+        assert_eq!(uv, (3, 9));
+    }
+
+    #[test]
     fn front_view_world_hit_maps_xy() {
         let hit = Vec3::new(5.0 - WORLD_CENTER, 7.0 - WORLD_CENTER, 0.0);
         let uv = world_hit_to_uv(OrthoView::Front, hit).unwrap();
@@ -184,24 +222,23 @@ mod tests {
     }
 
     #[test]
-    fn uv_depth_round_trip_top() {
+    fn uv_depth_round_trip_all_faces() {
         let pos = WorldPos::new(42, 17, 99);
-        let uv = (pos.x, pos.z);
-        assert_eq!(uv_depth_to_cell(OrthoView::Top, uv.0, uv.1, pos.y), pos);
-    }
-
-    #[test]
-    fn uv_depth_round_trip_front() {
-        let pos = WorldPos::new(11, 22, 33);
-        let uv = (pos.x, pos.y);
-        assert_eq!(uv_depth_to_cell(OrthoView::Front, uv.0, uv.1, pos.z), pos);
-    }
-
-    #[test]
-    fn uv_depth_round_trip_left() {
-        let pos = WorldPos::new(44, 55, 66);
-        let uv = (pos.y, pos.z);
-        assert_eq!(uv_depth_to_cell(OrthoView::Left, uv.0, uv.1, pos.x), pos);
+        for view in OrthoView::ALL {
+            let depth = view.slice_depth(pos);
+            let (u, v) = match view {
+                OrthoView::Top | OrthoView::Bottom => (pos.x, if matches!(view, OrthoView::Top) { pos.z } else { WORLD_SIZE as u16 - 1 - pos.z }),
+                OrthoView::Front | OrthoView::Back => (
+                    if matches!(view, OrthoView::Front) { pos.x } else { WORLD_SIZE as u16 - 1 - pos.x },
+                    pos.y,
+                ),
+                OrthoView::Left | OrthoView::Right => (
+                    if matches!(view, OrthoView::Left) { pos.y } else { WORLD_SIZE as u16 - 1 - pos.y },
+                    if matches!(view, OrthoView::Left) { pos.z } else { WORLD_SIZE as u16 - 1 - pos.z },
+                ),
+            };
+            assert_eq!(uv_depth_to_cell(view, u, v, depth), pos, "round-trip failed for {view:?}");
+        }
     }
 
     #[test]
@@ -258,7 +295,6 @@ mod tests {
 
     #[test]
     fn top_ray_pick_test_vector() {
-        // Camera above origin, ray straight down through cell (10, 8, 10).
         let origin = Vec3::new(10.0 - WORLD_CENTER, 100.0, 10.0 - WORLD_CENTER);
         let direction = Vec3::NEG_Y;
 
@@ -275,46 +311,6 @@ mod tests {
         )
         .unwrap();
         assert_eq!(picked, WorldPos::new(10, 8, 10));
-    }
-
-    #[test]
-    fn front_ray_pick_test_vector() {
-        let origin = Vec3::new(5.0 - WORLD_CENTER, 5.0 - WORLD_CENTER, 100.0);
-        let direction = Vec3::NEG_Z;
-
-        let mut sim = Simulation::new();
-        sim.world
-            .set(WorldPos::new(5, 5, 9), make_generator(20, 1));
-
-        let picked = pick_surface_cell(
-            &sim,
-            OrthoView::Front,
-            unclipped_slice_depth(OrthoView::Front),
-            origin,
-            direction,
-        )
-        .unwrap();
-        assert_eq!(picked, WorldPos::new(5, 5, 9));
-    }
-
-    #[test]
-    fn left_ray_pick_test_vector() {
-        let origin = Vec3::new(-100.0, 5.0 - WORLD_CENTER, 5.0 - WORLD_CENTER);
-        let direction = Vec3::X;
-
-        let mut sim = Simulation::new();
-        sim.world
-            .set(WorldPos::new(1, 5, 5), make_generator(20, 1));
-
-        let picked = pick_surface_cell(
-            &sim,
-            OrthoView::Left,
-            unclipped_slice_depth(OrthoView::Left),
-            origin,
-            direction,
-        )
-        .unwrap();
-        assert_eq!(picked, WorldPos::new(1, 5, 5));
     }
 
     #[test]

@@ -8,7 +8,7 @@ use boxes_sim::{Cell, ChunkCoord, WorldPos};
 use super::materials::GridMaterials;
 use super::surface::{surface_cells_for_chunk, visible_surface};
 use super::view::{cell_to_world, ActiveView, OrthoView};
-use crate::ViewSlice;
+use crate::input::{slice_depth, SelectedCell};
 
 /// Instance cube spawned for one visible surface cell.
 #[derive(Component)]
@@ -56,13 +56,13 @@ pub fn mark_view_change(
     }
 }
 
-pub fn mark_slice_change(
+pub fn mark_selection_depth_change(
     active: Res<ActiveView>,
-    slice: Res<ViewSlice>,
+    selection: Res<SelectedCell>,
     mut last_depth: Local<Option<u16>>,
     mut pending: ResMut<PendingChunkRebuilds>,
 ) {
-    let depth = slice.depth(active.0);
+    let depth = slice_depth(active.0, &selection);
     if *last_depth != Some(depth) {
         *last_depth = Some(depth);
         pending.mark_all();
@@ -72,7 +72,7 @@ pub fn mark_slice_change(
 pub fn rebuild_chunk_instances(
     mut commands: Commands,
     active: Res<ActiveView>,
-    slice: Res<ViewSlice>,
+    selection: Res<SelectedCell>,
     materials: Res<GridMaterials>,
     sim: Res<crate::GridSimulation>,
     mut cache: ResMut<ChunkRenderCache>,
@@ -82,7 +82,7 @@ pub fn rebuild_chunk_instances(
         return;
     }
 
-    let slice_depth = slice.depth(active.0);
+    let slice_depth = slice_depth(active.0, &selection);
     let surface = visible_surface(&sim.0, active.0, slice_depth);
 
     let targets: HashSet<ChunkCoord> = if pending.rebuild_all {

@@ -1,4 +1,4 @@
-//! View-dependent surface extraction (top / front / left).
+//! View-dependent surface extraction for six orthographic faces.
 
 use std::collections::HashMap;
 
@@ -10,31 +10,27 @@ use super::view::OrthoView;
 #[must_use]
 pub fn view_key(pos: WorldPos, view: OrthoView) -> (u16, u16) {
     match view {
-        OrthoView::Top => (pos.x, pos.z),
-        OrthoView::Front => (pos.x, pos.y),
-        OrthoView::Left => (pos.y, pos.z),
+        OrthoView::Top | OrthoView::Bottom => (pos.x, pos.z),
+        OrthoView::Front | OrthoView::Back => (pos.x, pos.y),
+        OrthoView::Left | OrthoView::Right => (pos.y, pos.z),
     }
 }
 
 fn is_better(candidate: WorldPos, current: WorldPos, view: OrthoView) -> bool {
     match view {
-        // Top: highest Y column cell.
         OrthoView::Top => candidate.y > current.y,
-        // Front: nearest toward +Z (camera looks from +Z toward origin).
+        OrthoView::Bottom => candidate.y < current.y,
         OrthoView::Front => candidate.z > current.z,
-        // Left: nearest toward -X (camera looks from -X toward origin).
+        OrthoView::Back => candidate.z < current.z,
         OrthoView::Left => candidate.x < current.x,
+        OrthoView::Right => candidate.x > current.x,
     }
 }
 
 /// Depth coordinate of `pos` along the axis perpendicular to `view`.
 #[must_use]
 pub fn cell_depth(pos: WorldPos, view: OrthoView) -> u16 {
-    match view {
-        OrthoView::Top => pos.y,
-        OrthoView::Front => pos.z,
-        OrthoView::Left => pos.x,
-    }
+    view.slice_depth(pos)
 }
 
 /// Slice depth that shows the full grid (no clipping) for `view`.
@@ -42,17 +38,19 @@ pub fn cell_depth(pos: WorldPos, view: OrthoView) -> u16 {
 #[cfg_attr(not(test), allow(dead_code))]
 pub fn unclipped_slice_depth(view: OrthoView) -> u16 {
     match view {
-        // Camera at -X: all cells satisfy x >= 0.
-        OrthoView::Left => 0,
-        OrthoView::Top | OrthoView::Front => WORLD_SIZE as u16 - 1,
+        OrthoView::Left | OrthoView::Bottom | OrthoView::Back => 0,
+        OrthoView::Top | OrthoView::Front | OrthoView::Right => WORLD_SIZE as u16 - 1,
     }
 }
+
 /// True when the cell is at or behind the slice plane (not between slice and camera).
 #[must_use]
 pub fn is_cell_visible_at_slice(pos: WorldPos, view: OrthoView, slice_depth: u16) -> bool {
-    match view {
-        OrthoView::Top | OrthoView::Front => cell_depth(pos, view) <= slice_depth,
-        OrthoView::Left => cell_depth(pos, view) >= slice_depth,
+    let depth = cell_depth(pos, view);
+    if view.slice_uses_lte() {
+        depth <= slice_depth
+    } else {
+        depth >= slice_depth
     }
 }
 
@@ -93,13 +91,13 @@ pub fn affected_chunks(pos: WorldPos, view: OrthoView) -> Vec<ChunkCoord> {
     let cz = pos.z / CHUNK_SIZE;
 
     match view {
-        OrthoView::Top => (0..CHUNKS_PER_AXIS)
+        OrthoView::Top | OrthoView::Bottom => (0..CHUNKS_PER_AXIS)
             .map(|chunk_y| ChunkCoord::new(cx, chunk_y, cz))
             .collect(),
-        OrthoView::Front => (0..CHUNKS_PER_AXIS)
+        OrthoView::Front | OrthoView::Back => (0..CHUNKS_PER_AXIS)
             .map(|chunk_z| ChunkCoord::new(cx, cy, chunk_z))
             .collect(),
-        OrthoView::Left => (0..CHUNKS_PER_AXIS)
+        OrthoView::Left | OrthoView::Right => (0..CHUNKS_PER_AXIS)
             .map(|chunk_x| ChunkCoord::new(chunk_x, cy, cz))
             .collect(),
     }
@@ -135,6 +133,48 @@ mod tests {
 
         let surface = visible_surface(&sim, OrthoView::Top, unclipped_slice_depth(OrthoView::Top));
         let (_, cell) = surface[&(10, 10)];
+        assert_eq!(cell.state, 2);
+    }
+
+    #[test]
+    fn bottom_view_picks_lowest_y() {
+        let mut sim = Simulation::new();
+        sim.world
+            .set(WorldPos::new(10, 1, 10), make_generator(20, 1));
+        sim.world
+            .set(WorldPos::new(10, 5, 10), make_generator(20, 2));
+
+        let surface =
+            visible_surface(&sim, OrthoView::Bottom, unclipped_slice_depth(OrthoView::Bottom));
+        let (_, cell) = surface[&(10, 10)];
+        assert_eq!(cell.state, 1);
+    }
+
+    #[test]
+    fn back_view_picks_min_z() {
+        let mut sim = Simulation::new();
+        sim.world
+            .set(WorldPos::new(5, 5, 1), make_generator(20, 1));
+        sim.world
+            .set(WorldPos::new(5, 5, 9), make_generator(20, 2));
+
+        let surface =
+            visible_surface(&sim, OrthoView::Back, unclipped_slice_depth(OrthoView::Back));
+        let (_, cell) = surface[&(5, 5)];
+        assert_eq!(cell.state, 1);
+    }
+
+    #[test]
+    fn right_view_picks_max_x() {
+        let mut sim = Simulation::new();
+        sim.world
+            .set(WorldPos::new(1, 5, 5), make_generator(20, 1));
+        sim.world
+            .set(WorldPos::new(9, 5, 5), make_generator(20, 2));
+
+        let surface =
+            visible_surface(&sim, OrthoView::Right, unclipped_slice_depth(OrthoView::Right));
+        let (_, cell) = surface[&(5, 5)];
         assert_eq!(cell.state, 2);
     }
 

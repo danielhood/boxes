@@ -8,6 +8,7 @@ use boxes_sim::{
     Direction, ReduceMode, Simulation, WorldPos, MAX_STEPS_PER_FRAME,
 };
 
+use crate::input::{random_selection, SelectedCell};
 use crate::render::{affected_chunks, ActiveView, OrthoView, PendingChunkRebuilds};
 
 /// Simulation playback speed multiplier.
@@ -100,8 +101,12 @@ pub struct SimDirtyChunks {
 
 pub fn setup_simulation(mut commands: Commands) {
     let mut sim = Simulation::new();
-    seed_demo_world(&mut sim);
+    let seed_positions = seed_demo_world(&mut sim);
+    let selection = SelectedCell {
+        pos: random_selection(&seed_positions, &sim),
+    };
     commands.insert_resource(GridSimulation(sim));
+    commands.insert_resource(selection);
     commands.insert_resource(SimClock::default());
     commands.insert_resource(SimDirtyChunks::default());
     commands.insert_resource(SimPlayback::default());
@@ -109,8 +114,9 @@ pub fn setup_simulation(mut commands: Commands) {
 }
 
 /// Seed a ~64³ active region near world center for dev rendering.
-pub fn seed_demo_world(sim: &mut Simulation) {
+pub fn seed_demo_world(sim: &mut Simulation) -> Vec<WorldPos> {
     let origin = (500u16.saturating_sub(64)) / 2;
+    let mut positions = Vec::with_capacity(64 * 64);
 
     for x in 0..64u16 {
         for z in 0..64u16 {
@@ -127,11 +133,13 @@ pub fn seed_demo_world(sim: &mut Simulation) {
                 _ => make_generator(generator_period::SLOW, 0),
             };
             sim.world.set(pos, cell);
+            positions.push(pos);
         }
     }
 
     // Mark a few event-driven listeners dirty so the sim produces ongoing activity.
     sim.mark_dirty(WorldPos::new(origin + 2, origin + 2, origin + 2));
+    positions
 }
 
 /// Whether the sim loop should advance this frame (excluding `step_pending` handling).

@@ -4,7 +4,7 @@ use bevy::prelude::*;
 use bevy::render::camera::ClearColorConfig;
 
 use crate::input::{
-    palette_slot_label, ActiveTool, InspectedCell, ToolState, ViewSlice,
+    palette_slot_label, slice_depth, ActiveTool, SelectedCell, ToolState,
 };
 use crate::render::ActiveView;
 use crate::sim_bridge::{GridSimulation, SimPlayback, SimTickStats};
@@ -55,7 +55,6 @@ impl Plugin for FactoryUiPlugin {
             .add_systems(
                 Update,
                 (
-                    refresh_inspected_cell,
                     palette_button_system,
                     tool_button_system,
                     sim_control_button_system,
@@ -252,7 +251,7 @@ fn setup_factory_ui(mut commands: Commands, tools: Res<ToolState>, mut entities:
                 spawn_text(inspector, "Inspector", 16.0, ());
                 spawn_text(
                     inspector,
-                    "Inspect a cell (RMB or inspect tool)",
+                    "Selected cell",
                     14.0,
                     FactoryTextPanel::Inspector,
                 );
@@ -275,16 +274,6 @@ fn setup_factory_ui(mut commands: Commands, tools: Res<ToolState>, mut entities:
                 spawn_text(hud, "", 13.0, FactoryTextPanel::DebugOverlay);
             });
         });
-}
-
-fn refresh_inspected_cell(
-    sim: Res<GridSimulation>,
-    mut inspected: ResMut<InspectedCell>,
-) {
-    let Some(pos) = inspected.pos else {
-        return;
-    };
-    inspected.cell = sim.0.world.get(pos);
 }
 
 fn palette_button_system(
@@ -376,17 +365,18 @@ fn update_tool_highlight(
 
 fn update_factory_text(
     sim: Res<GridSimulation>,
-    inspected: Res<InspectedCell>,
-    slice: Res<ViewSlice>,
+    selection: Res<SelectedCell>,
     active: Res<ActiveView>,
     playback: Res<SimPlayback>,
     stats: Res<SimTickStats>,
     mut text_q: Query<(&FactoryTextPanel, &mut Text)>,
 ) {
+    let selected_cell = sim.0.world.get(selection.pos);
+
     for (panel, mut text) in &mut text_q {
         match panel {
             FactoryTextPanel::Inspector => {
-                **text = format_inspector(inspected.pos, inspected.cell);
+                **text = format_inspector(Some(selection.pos), selected_cell);
             }
             FactoryTextPanel::Throughput => {
                 **text = format_throughput(
@@ -397,8 +387,8 @@ fn update_factory_text(
             }
             FactoryTextPanel::DepthSlice => {
                 let view = active.0;
-                let depth = slice.depth(view);
-                let axis = ViewSlice::depth_axis_label(view);
+                let depth = slice_depth(view, &selection);
+                let axis = view.depth_axis_label();
                 **text = format!("depth {axis}={depth} ({})", view.label());
             }
             FactoryTextPanel::DebugOverlay => {
@@ -425,12 +415,11 @@ mod tests {
         let mut app = App::new();
         app.add_plugins((MinimalPlugins, FactoryUiPlugin))
             .init_resource::<ToolState>()
-            .init_resource::<InspectedCell>()
+            .init_resource::<SelectedCell>()
             .insert_resource(GridSimulation(boxes_sim::Simulation::new()))
             .init_resource::<SimPlayback>()
             .init_resource::<SimTickStats>()
-            .init_resource::<ActiveView>()
-            .init_resource::<ViewSlice>();
+            .init_resource::<ActiveView>();
         app.update();
     }
 

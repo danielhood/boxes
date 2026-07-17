@@ -1,7 +1,7 @@
 # Completed phases
 
 **Status:** active  
-**Last updated:** 2026-07-16  
+**Last updated:** 2026-07-17  
 **Related:** [active roadmap](active.md), [initial planning](../planning/initial-planning.md)
 
 Shipped work is logged here with links to specs and merge PRs. Promote the next row from [active.md](active.md) when starting new work.
@@ -56,3 +56,11 @@ Shipped work is logged here with links to specs and merge PRs. Promote the next 
 | P5 | Type palette, cell inspector, pause/step/speed, throughput HUD, debug overlay | [P5-factory-ui](../specs/P5-factory-ui.md) | [PR #9](https://github.com/danielhood/boxes/pull/9) |
 
 **Exit criteria met:** UI palette selects `ToolState` slot for P4 placement; inspector shows live picked-cell state; pause stops sim stepping; step advances exactly one tick; speed multiplier on fixed timestep; optional chunk debug readout.
+
+## P5.1 — Selection and view navigation (shipped 2026-07-17)
+
+| Slice | Summary | Spec | Shipped |
+|-------|---------|------|---------|
+| P5.1 | Persistent selected cell, six-face view orbit, zoom, pointer remap, help overlay | [P5.1-selection-view-nav](../specs/P5.1-selection-view-nav.md) | _PR pending_ |
+
+**Exit criteria met:** Always-on `SelectedCell`; cameras frame selection; Ctrl+arrows orbit six ortho faces; LMB select / RMB tool; inspector follows selection; `?` help overlay; slice depth derived from selection.

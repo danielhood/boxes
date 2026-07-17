@@ -41,37 +41,40 @@ A window opens with a seeded demo grid in an orthographic viewport. Close the wi
 
 ### Views
 
-The world is shown one orthographic face at a time. The **visible surface** is the topmost cell per column at or behind the current **depth slice**; cells between the slice and the camera are hidden.
-
-| Key | View |
-|-----|------|
-| `1` or `T` | Top (looking down Y) |
-| `2` or `F` | Front (looking along −Z) |
-| `3` or `L` | Left (looking along +X) |
-
-### Tools
+The world is shown one orthographic face at a time, centered on the **selected cell**. The **visible surface** is the outermost cell per column at or behind the current depth slice (derived from the selection); cells between the slice and the camera are hidden.
 
 | Input | Action |
 |-------|--------|
-| **LMB** | Apply the active tool on the cell under the cursor |
-| **LMB drag** | Apply the active tool while dragging across cells |
-| **RMB** | Inspect the cell under the cursor |
+| **Arrow keys** | Move selected cell on the face |
+| **Ctrl + Arrow keys** | Rotate to an adjacent face (six orthographic views) |
+| `T` | Snap to top view |
+| **Ctrl + Mouse wheel** / **Ctrl + `[` / `]`** | Zoom in/out (8–64 cells visible) |
+| `[` / `]` / **Mouse wheel** | Step selection along depth |
+
+### Selection & tools
+
+| Input | Action |
+|-------|--------|
+| **LMB** | Select cell (drag to track selection) |
+| **RMB** | Apply the active tool on the cell under the cursor |
+| **RMB drag** | Apply the active tool while dragging |
 | `P` | Place tool (default) |
 | `E` | Erase tool — removes the visible surface cell |
-| `I` | Inspect tool — same as RMB |
+| `I` | Inspect tool — logs cell state to the console |
+| `?` | Toggle help overlay (Esc to close) |
 
-**Place** puts the selected palette cell type at the current depth slice in the column under the cursor. **Erase** clears the visible surface cell. **Inspect** logs cell coordinates, type, and state to the console.
+**Place** puts the selected palette cell type at the current depth slice in the column under the cursor. **Erase** clears the visible surface cell. The **inspector** always shows the selected cell.
 
 ### Depth slice
 
-Place tool writes cells at the current depth slice for the column under the cursor. The view **clips** cells between the slice and the camera so you always see the layer you are editing. Nudge the slice before placing; the console logs each change (e.g. `depth slice Y=251 (Top)`).
+Slice depth follows the selected cell on the active view axis. Nudge with `[` / `]` or the mouse wheel before placing in a column.
 
 | Key | Action |
 |-----|--------|
-| `[` or `PageDown` or `-` | Decrease depth (one layer toward the camera) |
-| `]` or `PageUp` or `=` | Increase depth (one layer away from the camera) |
+| `[` | Decrease depth (toward camera) |
+| `]` | Increase depth (away from camera) |
 
-The depth axis depends on the view: **Y** in top, **Z** in front, **X** in left.
+The depth axis depends on the view: **Y** in top/bottom, **Z** in front/back, **X** in left/right.
 
 ### Type palette
 
@@ -99,15 +102,17 @@ A 2D overlay complements keyboard tools:
 |---------|--------|
 | **Type palette** (left) | Click a slot to select cell type and switch to place mode |
 | **Tool** (left) | Click Place, Erase, or Inspect to switch the active tool |
-| **Inspector** (bottom left) | Live readout for the cell picked with RMB or inspect tool |
+| **Inspector** (bottom left) | Live readout for the **selected** cell |
 | **Pause / Resume** | Stops or resumes simulation stepping |
 | **Step** | Advances exactly one simulation tick (works while paused) |
 | **Speed** | Cycles sim speed: 0.5×, 1×, 2× |
 | **Debug** | Toggles last-tick cell update and dirty-chunk readout |
 | **Throughput HUD** (bottom right) | Current tick, cumulative cell updates, last-tick dirty chunks |
-| **Depth readout** | Current depth slice for the active orthographic view |
+| **Depth readout** | Current depth slice (from selection) for the active view |
 
-Keyboard palette (`Shift`+digit) and slice nudge (`[`/`]`) remain available alongside the UI.
+Press **`?`** for a full key and mouse binding reference.
+
+Keyboard palette (`Shift`+digit) remains available alongside the UI.
 
 Bindings will be configurable in a future release (P9).
 
