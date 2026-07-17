@@ -1,6 +1,7 @@
 //! Chunked grid rendering for Boxes.
 
 mod chunk;
+mod highlight;
 mod materials;
 mod surface;
 mod view;
@@ -16,6 +17,7 @@ pub use view::{
 use bevy::prelude::*;
 
 use chunk::{mark_selection_depth_change, mark_view_change, queue_initial_rebuild, rebuild_chunk_instances};
+use highlight::{setup_selection_highlight, sync_selection_highlight};
 use materials::GridMaterials;
 use view::{apply_camera_framing, setup_cameras, snap_top_view_system, view_rotate_system};
 
@@ -30,7 +32,12 @@ impl Plugin for GridRenderPlugin {
             .init_resource::<ViewCameraState>()
             .add_systems(
                 Startup,
-                (GridMaterials::setup, setup_cameras, queue_initial_rebuild),
+                (
+                    GridMaterials::setup,
+                    setup_cameras,
+                    setup_selection_highlight,
+                    queue_initial_rebuild,
+                ),
             )
             .add_systems(
                 Update,
@@ -40,6 +47,7 @@ impl Plugin for GridRenderPlugin {
                     mark_view_change,
                     mark_selection_depth_change,
                     apply_camera_framing,
+                    sync_selection_highlight,
                     rebuild_chunk_instances,
                 )
                     .chain(),
