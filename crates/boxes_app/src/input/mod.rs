@@ -1,19 +1,22 @@
 //! Mouse and keyboard tools for grid editing.
 
 mod pick;
+mod selection;
 mod tools;
 
 pub use pick::{pick_slice_cell, pick_surface_cell};
 #[allow(unused_imports)]
 pub use pick::pick_surface_at_uv;
-pub use tools::{slice_nudge_delta, ActiveTool, InspectedCell, PalettePreset, ToolState, ViewSlice};
+pub use selection::{random_selection, set_selection, slice_depth, SelectedCell};
+pub use tools::{ActiveTool, PalettePreset, ToolState};
 pub use tools::{direction_label, palette_slot_label, reduce_mode_label};
 
+use bevy::input::mouse::MouseWheel;
 use bevy::prelude::*;
 use bevy::window::PrimaryWindow;
 use boxes_sim::{Cell, WorldPos};
 
-use crate::render::{ActiveView, GridCamera, OrthoView, PendingChunkRebuilds, ViewCameras};
+use crate::render::{ActiveView, GridCamera, GridCameraEntity, PendingChunkRebuilds, ScreenDir, ViewCameraState};
 use crate::sim_bridge::{queue_rebuild_for_positions, GridSimulation};
 
 /// Input plugin: picking, placement tools, slice offset, inspect.
@@ -22,25 +25,29 @@ pub struct InputPlugin;
 impl Plugin for InputPlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<ToolState>()
-            .init_resource::<ViewSlice>()
-            .init_resource::<InspectedCell>()
+            .init_resource::<SelectedCell>()
             .add_systems(
                 Update,
                 (
                     tool_keyboard_system,
+                    keyboard_nav_system,
                     slice_keyboard_system,
-                    pointer_tool_system.after(tool_keyboard_system),
-                ),
+                    zoom_keyboard_system,
+                    wheel_input_system,
+                    pointer_select_system,
+                    pointer_tool_system,
+                )
+                    .chain(),
             );
     }
 }
 
-fn active_camera_entity(view: OrthoView, cameras: &ViewCameras) -> Entity {
-    match view {
-        OrthoView::Top => cameras.top,
-        OrthoView::Front => cameras.front,
-        OrthoView::Left => cameras.left,
-    }
+fn ctrl_held(keyboard: &ButtonInput<KeyCode>) -> bool {
+    keyboard.pressed(KeyCode::ControlLeft) || keyboard.pressed(KeyCode::ControlRight)
+}
+
+fn shift_held(keyboard: &ButtonInput<KeyCode>) -> bool {
+    keyboard.pressed(KeyCode::ShiftLeft) || keyboard.pressed(KeyCode::ShiftRight)
 }
 
 fn cursor_ray<'a>(
@@ -64,7 +71,7 @@ fn tool_keyboard_system(keyboard: Res<ButtonInput<KeyCode>>, mut tools: ResMut<T
         tools.active = ActiveTool::Inspect;
     }
 
-    if keyboard.pressed(KeyCode::ShiftLeft) || keyboard.pressed(KeyCode::ShiftRight) {
+    if shift_held(&keyboard) {
         let slot = if keyboard.just_pressed(KeyCode::Digit1) {
             Some(0)
         } else if keyboard.just_pressed(KeyCode::Digit2) {
@@ -93,46 +100,112 @@ fn tool_keyboard_system(keyboard: Res<ButtonInput<KeyCode>>, mut tools: ResMut<T
     }
 }
 
-fn slice_keyboard_system(
+fn keyboard_nav_system(
     keyboard: Res<ButtonInput<KeyCode>>,
     active: Res<ActiveView>,
-    mut slice: ResMut<ViewSlice>,
+    mut selection: ResMut<SelectedCell>,
 ) {
-    let Some(delta) = slice_nudge_delta(&keyboard) else {
+    if ctrl_held(&keyboard) {
+        return;
+    }
+
+    let dir = if keyboard.just_pressed(KeyCode::ArrowUp) {
+        ScreenDir::Up
+    } else if keyboard.just_pressed(KeyCode::ArrowDown) {
+        ScreenDir::Down
+    } else if keyboard.just_pressed(KeyCode::ArrowLeft) {
+        ScreenDir::Left
+    } else if keyboard.just_pressed(KeyCode::ArrowRight) {
+        ScreenDir::Right
+    } else {
         return;
     };
 
-    let view = active.0;
-    let next = slice.nudge(view, delta);
-    slice.set_depth(view, next);
-    info!(
-        "depth slice {}={} ({})",
-        ViewSlice::depth_axis_label(view),
-        next,
-        view.label()
-    );
+    let next = active.pose.nudge_screen(selection.pos, dir);
+    set_selection(&mut selection, next);
+}
+
+fn slice_depth_delta(keyboard: &ButtonInput<KeyCode>) -> Option<i16> {
+    if keyboard.just_pressed(KeyCode::BracketLeft) {
+        Some(-1)
+    } else if keyboard.just_pressed(KeyCode::BracketRight) {
+        Some(1)
+    } else {
+        None
+    }
+}
+
+fn slice_keyboard_system(
+    keyboard: Res<ButtonInput<KeyCode>>,
+    active: Res<ActiveView>,
+    mut selection: ResMut<SelectedCell>,
+) {
+    if ctrl_held(&keyboard) {
+        return;
+    }
+    let Some(delta) = slice_depth_delta(&keyboard) else {
+        return;
+    };
+    let next = active.pose.nudge_depth(selection.pos, delta);
+    set_selection(&mut selection, next);
+}
+
+fn zoom_keyboard_system(keyboard: Res<ButtonInput<KeyCode>>, mut camera: ResMut<ViewCameraState>) {
+    if !ctrl_held(&keyboard) {
+        return;
+    }
+    if keyboard.just_pressed(KeyCode::BracketLeft) {
+        camera.nudge_zoom(-4.0);
+    } else if keyboard.just_pressed(KeyCode::BracketRight) {
+        camera.nudge_zoom(4.0);
+    }
+}
+
+fn wheel_input_system(
+    keyboard: Res<ButtonInput<KeyCode>>,
+    mut wheel_events: EventReader<MouseWheel>,
+    active: Res<ActiveView>,
+    mut selection: ResMut<SelectedCell>,
+    mut camera: ResMut<ViewCameraState>,
+) {
+    let mut delta = 0.0f32;
+    for event in wheel_events.read() {
+        delta += event.y;
+    }
+    if delta == 0.0 {
+        return;
+    }
+
+    if ctrl_held(&keyboard) {
+        camera.nudge_zoom(delta * 2.0);
+        return;
+    }
+
+    let steps = delta.signum() as i16;
+    let next = active.pose.nudge_depth(selection.pos, steps);
+    set_selection(&mut selection, next);
 }
 
 #[allow(clippy::too_many_arguments)]
-fn pointer_tool_system(
+fn pointer_select_system(
     mouse: Res<ButtonInput<MouseButton>>,
     windows: Query<&Window, With<PrimaryWindow>>,
     active: Res<ActiveView>,
-    cameras: Res<ViewCameras>,
+    camera_entity: Res<GridCameraEntity>,
     camera_query: Query<(&Camera, &GlobalTransform), With<GridCamera>>,
-    tools: Res<ToolState>,
-    slice: Res<ViewSlice>,
-    mut sim: ResMut<GridSimulation>,
-    mut pending: ResMut<PendingChunkRebuilds>,
-    mut inspected: ResMut<InspectedCell>,
-    mut last_drag_pos: Local<Option<WorldPos>>,
+    mut selection: ResMut<SelectedCell>,
 ) {
+    let select_held = mouse.pressed(MouseButton::Left);
+    let select_pressed = mouse.just_pressed(MouseButton::Left);
+    if !select_held && !select_pressed {
+        return;
+    }
+
     let Ok(window) = windows.single() else {
         return;
     };
 
-    let camera_entity = active_camera_entity(active.0, &cameras);
-    let Ok((camera, transform)) = camera_query.get(camera_entity) else {
+    let Ok((camera, transform)) = camera_query.get(camera_entity.0) else {
         return;
     };
 
@@ -140,49 +213,56 @@ fn pointer_tool_system(
         return;
     };
 
-    let inspect_pressed = mouse.just_pressed(MouseButton::Right);
-    let apply_pressed = mouse.just_pressed(MouseButton::Left);
-    let apply_held = mouse.pressed(MouseButton::Left);
+    let depth = slice_depth(active.pose, &selection);
+    let Some(pos) = pick_slice_cell(active.pose, depth, origin, direction) else {
+        return;
+    };
 
-    if !inspect_pressed && !apply_pressed && !apply_held {
+    if select_pressed || (select_held && selection.pos != pos) {
+        set_selection(&mut selection, pos);
+    }
+}
+
+#[allow(clippy::too_many_arguments)]
+fn pointer_tool_system(
+    mouse: Res<ButtonInput<MouseButton>>,
+    windows: Query<&Window, With<PrimaryWindow>>,
+    active: Res<ActiveView>,
+    camera_entity: Res<GridCameraEntity>,
+    camera_query: Query<(&Camera, &GlobalTransform), With<GridCamera>>,
+    tools: Res<ToolState>,
+    selection: Res<SelectedCell>,
+    mut sim: ResMut<GridSimulation>,
+    mut pending: ResMut<PendingChunkRebuilds>,
+    mut last_drag_pos: Local<Option<WorldPos>>,
+) {
+    let apply_pressed = mouse.just_pressed(MouseButton::Right);
+    let apply_held = mouse.pressed(MouseButton::Right);
+
+    if !apply_pressed && !apply_held {
         *last_drag_pos = None;
         return;
     }
 
-    let view = active.0;
-    let depth = slice.depth(view);
-
-    if inspect_pressed || tools.active == ActiveTool::Inspect && apply_pressed {
-        if let Some(pos) = pick_surface_cell(&sim.0, view, depth, origin, direction) {
-            let cell = sim.0.world.get(pos);
-            inspected.pos = Some(pos);
-            inspected.cell = cell;
-            info!(
-                "inspect ({}, {}, {}): type={} state={} flags={}",
-                pos.x, pos.y, pos.z, cell.type_id, cell.state, cell.flags
-            );
-        }
+    let Ok(window) = windows.single() else {
         return;
-    }
-
-    let should_apply = if apply_pressed {
-        true
-    } else if apply_held {
-        // Drag placement: apply when cursor moves to a new cell.
-        true
-    } else {
-        false
     };
 
-    if !should_apply {
+    let Ok((camera, transform)) = camera_query.get(camera_entity.0) else {
         return;
-    }
+    };
+
+    let Some((origin, direction)) = cursor_ray(window, camera, transform) else {
+        return;
+    };
+
+    let pose = active.pose;
+    let depth = slice_depth(pose, &selection);
 
     let target = match tools.active {
-        ActiveTool::Erase => pick_surface_cell(&sim.0, view, depth, origin, direction),
-        // Place at the current depth slice (not the visible surface).
-        ActiveTool::Place => pick_slice_cell(view, depth, origin, direction),
-        ActiveTool::Inspect => None,
+        ActiveTool::Erase => pick_surface_cell(&sim.0, pose, depth, origin, direction),
+        ActiveTool::Place => pick_slice_cell(pose, depth, origin, direction),
+        ActiveTool::Inspect => pick_surface_cell(&sim.0, pose, depth, origin, direction),
     };
 
     let Some(pos) = target else {
@@ -200,15 +280,21 @@ fn pointer_tool_system(
                 return;
             }
             sim.0.world.set(pos, Cell::empty());
-            queue_rebuild_for_positions(&[pos], view, &mut pending);
+            queue_rebuild_for_positions(&[pos], pose.face(), &mut pending);
         }
         ActiveTool::Place => {
             let cell = tools.selected_preset().to_cell();
             sim.0.world.set(pos, cell);
             sim.0.mark_dirty(pos);
-            queue_rebuild_for_positions(&[pos], view, &mut pending);
+            queue_rebuild_for_positions(&[pos], pose.face(), &mut pending);
         }
-        ActiveTool::Inspect => {}
+        ActiveTool::Inspect => {
+            let cell = sim.0.world.get(pos);
+            info!(
+                "inspect ({}, {}, {}): type={} state={} flags={}",
+                pos.x, pos.y, pos.z, cell.type_id, cell.state, cell.flags
+            );
+        }
     }
 }
 
@@ -221,12 +307,8 @@ mod tests {
     fn input_plugin_builds_without_panic() {
         App::new()
             .add_plugins(InputPlugin)
-            .insert_resource(ActiveView(crate::render::OrthoView::Top))
-            .insert_resource(ViewCameras {
-                top: Entity::PLACEHOLDER,
-                front: Entity::PLACEHOLDER,
-                left: Entity::PLACEHOLDER,
-            });
+            .insert_resource(ActiveView::default())
+            .insert_resource(GridCameraEntity(Entity::PLACEHOLDER));
     }
 
     #[test]

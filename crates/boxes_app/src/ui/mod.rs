@@ -2,5 +2,7 @@
 
 mod factory;
 mod format;
+mod help;
 
 pub use factory::FactoryUiPlugin;
+pub use help::HelpUiPlugin;
