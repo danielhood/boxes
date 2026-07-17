@@ -18,6 +18,10 @@ pub struct FactoryUiRoot;
 #[derive(Component, Clone, Copy)]
 pub struct PaletteButton(pub usize);
 
+/// Tool mode button.
+#[derive(Component, Clone, Copy)]
+pub struct ToolButton(pub ActiveTool);
+
 /// Sim control buttons.
 #[derive(Component, Clone, Copy)]
 pub enum SimControlButton {
@@ -53,8 +57,10 @@ impl Plugin for FactoryUiPlugin {
                 (
                     refresh_inspected_cell,
                     palette_button_system,
+                    tool_button_system,
                     sim_control_button_system,
                     update_palette_highlight,
+                    update_tool_highlight,
                     update_factory_text,
                 ),
             );
@@ -78,6 +84,30 @@ fn button_node() -> Node {
         border: UiRect::all(Val::Px(1.0)),
         ..default()
     }
+}
+
+fn tool_button_node() -> Node {
+    Node {
+        width: Val::Px(72.0),
+        height: Val::Px(28.0),
+        justify_content: JustifyContent::Center,
+        align_items: AlignItems::Center,
+        border: UiRect::all(Val::Px(1.0)),
+        ..default()
+    }
+}
+
+fn apply_selected_style(bg: &mut BackgroundColor, border: &mut BorderColor, selected: bool) {
+    *bg = if selected {
+        BackgroundColor(Color::srgb(0.25, 0.35, 0.55))
+    } else {
+        BackgroundColor(Color::srgba(0.15, 0.16, 0.2, 0.92))
+    };
+    *border = if selected {
+        BorderColor(Color::srgb(0.55, 0.7, 0.95))
+    } else {
+        BorderColor(Color::srgb(0.35, 0.38, 0.45))
+    };
 }
 
 fn spawn_text(
@@ -138,21 +168,43 @@ fn setup_factory_ui(mut commands: Commands, tools: Res<ToolState>, mut entities:
             },
         ))
         .with_children(|root| {
-            // Left palette column
-            let mut palette_panel = base_panel_node();
-            palette_panel.flex_direction = FlexDirection::Column;
-            palette_panel.row_gap = Val::Px(4.0);
-            palette_panel.top = Val::Px(12.0);
-            palette_panel.left = Val::Px(12.0);
+            // Left column: tools + type palette
+            let mut left_panel = base_panel_node();
+            left_panel.flex_direction = FlexDirection::Column;
+            left_panel.row_gap = Val::Px(8.0);
+            left_panel.top = Val::Px(12.0);
+            left_panel.left = Val::Px(12.0);
             root.spawn((
-                palette_panel,
+                left_panel,
                 BackgroundColor(Color::srgba(0.08, 0.09, 0.11, 0.85)),
             ))
-            .with_children(|palette| {
-                spawn_text(palette, "Type palette", 16.0, ());
+            .with_children(|left| {
+                spawn_text(left, "Tool", 16.0, ());
+                let tool_row = Node {
+                    flex_direction: FlexDirection::Row,
+                    column_gap: Val::Px(4.0),
+                    ..default()
+                };
+                left.spawn(tool_row).with_children(|tools_row| {
+                    for tool in [ActiveTool::Place, ActiveTool::Erase, ActiveTool::Inspect] {
+                        tools_row
+                            .spawn((
+                                Button,
+                                tool_button_node(),
+                                BackgroundColor(Color::srgba(0.15, 0.16, 0.2, 0.92)),
+                                BorderColor(Color::srgb(0.35, 0.38, 0.45)),
+                                ToolButton(tool),
+                            ))
+                            .with_children(|btn| {
+                                spawn_text(btn, tool.label(), 14.0, ());
+                            });
+                    }
+                });
+
+                spawn_text(left, "Type palette", 16.0, ());
                 for slot in 0..tools.palette.len() {
                     let label = palette_slot_label(slot, tools.palette[slot]);
-                    let entity = palette
+                    let entity = left
                         .spawn((
                             Button,
                             button_node(),
@@ -247,6 +299,17 @@ fn palette_button_system(
     }
 }
 
+fn tool_button_system(
+    mut interaction_q: Query<(&Interaction, &ToolButton), Changed<Interaction>>,
+    mut tools: ResMut<ToolState>,
+) {
+    for (interaction, button) in &mut interaction_q {
+        if *interaction == Interaction::Pressed {
+            tools.active = button.0;
+        }
+    }
+}
+
 fn sim_control_button_system(
     mut interaction_q: Query<(&Interaction, &SimControlButton), Changed<Interaction>>,
     mut playback: ResMut<SimPlayback>,
@@ -298,17 +361,16 @@ fn update_palette_highlight(
     mut buttons: Query<(&PaletteButton, &mut BackgroundColor, &mut BorderColor)>,
 ) {
     for (button, mut bg, mut border) in &mut buttons {
-        let selected = button.0 == tools.selected_slot;
-        *bg = if selected {
-            BackgroundColor(Color::srgb(0.25, 0.35, 0.55))
-        } else {
-            BackgroundColor(Color::srgba(0.15, 0.16, 0.2, 0.92))
-        };
-        *border = if selected {
-            BorderColor(Color::srgb(0.55, 0.7, 0.95))
-        } else {
-            BorderColor(Color::srgb(0.35, 0.38, 0.45))
-        };
+        apply_selected_style(&mut bg, &mut border, button.0 == tools.selected_slot);
+    }
+}
+
+fn update_tool_highlight(
+    tools: Res<ToolState>,
+    mut buttons: Query<(&ToolButton, &mut BackgroundColor, &mut BorderColor)>,
+) {
+    for (button, mut bg, mut border) in &mut buttons {
+        apply_selected_style(&mut bg, &mut border, button.0 == tools.active);
     }
 }
 

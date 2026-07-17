@@ -98,6 +98,7 @@ A 2D overlay complements keyboard tools:
 | Control | Action |
 |---------|--------|
 | **Type palette** (left) | Click a slot to select cell type and switch to place mode |
+| **Tool** (left) | Click Place, Erase, or Inspect to switch the active tool |
 | **Inspector** (bottom left) | Live readout for the cell picked with RMB or inspect tool |
 | **Pause / Resume** | Stops or resumes simulation stepping |
 | **Step** | Advances exactly one simulation tick (works while paused) |

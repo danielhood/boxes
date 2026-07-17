@@ -17,6 +17,17 @@ pub enum ActiveTool {
     Inspect,
 }
 
+impl ActiveTool {
+    #[must_use]
+    pub const fn label(self) -> &'static str {
+        match self {
+            Self::Place => "Place",
+            Self::Erase => "Erase",
+            Self::Inspect => "Inspect",
+        }
+    }
+}
+
 /// Factory cell preset for a palette slot.
 #[derive(Clone, Copy, Debug)]
 pub enum PalettePreset {
@@ -237,6 +248,13 @@ mod tests {
         let tool = ToolState::default();
         let cell = tool.selected_preset().to_cell();
         assert!(!cell.is_empty());
+    }
+
+    #[test]
+    fn active_tool_labels() {
+        assert_eq!(ActiveTool::Place.label(), "Place");
+        assert_eq!(ActiveTool::Erase.label(), "Erase");
+        assert_eq!(ActiveTool::Inspect.label(), "Inspect");
     }
 
     #[test]
