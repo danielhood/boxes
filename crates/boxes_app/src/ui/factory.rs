@@ -60,11 +60,9 @@ impl Plugin for FactoryUiPlugin {
     }
 }
 
-fn panel_style() -> Node {
+fn base_panel_node() -> Node {
     Node {
         position_type: PositionType::Absolute,
-        flex_direction: FlexDirection::Column,
-        row_gap: Val::Px(4.0),
         padding: UiRect::all(Val::Px(8.0)),
         ..default()
     }
@@ -128,13 +126,13 @@ fn setup_factory_ui(mut commands: Commands, tools: Res<ToolState>, mut entities:
         ))
         .with_children(|root| {
             // Left palette column
+            let mut palette_panel = base_panel_node();
+            palette_panel.flex_direction = FlexDirection::Column;
+            palette_panel.row_gap = Val::Px(4.0);
+            palette_panel.top = Val::Px(12.0);
+            palette_panel.left = Val::Px(12.0);
             root.spawn((
-                panel_style(),
-                Node {
-                    top: Val::Px(12.0),
-                    left: Val::Px(12.0),
-                    ..default()
-                },
+                palette_panel,
                 BackgroundColor(Color::srgba(0.08, 0.09, 0.11, 0.85)),
             ))
             .with_children(|palette| {
@@ -158,15 +156,13 @@ fn setup_factory_ui(mut commands: Commands, tools: Res<ToolState>, mut entities:
             });
 
             // Top-right sim controls
+            let mut controls_panel = base_panel_node();
+            controls_panel.flex_direction = FlexDirection::Row;
+            controls_panel.column_gap = Val::Px(6.0);
+            controls_panel.top = Val::Px(12.0);
+            controls_panel.right = Val::Px(12.0);
             root.spawn((
-                panel_style(),
-                Node {
-                    top: Val::Px(12.0),
-                    right: Val::Px(12.0),
-                    flex_direction: FlexDirection::Row,
-                    column_gap: Val::Px(6.0),
-                    ..default()
-                },
+                controls_panel,
                 BackgroundColor(Color::srgba(0.08, 0.09, 0.11, 0.85)),
             ))
             .with_children(|controls| {
@@ -177,14 +173,14 @@ fn setup_factory_ui(mut commands: Commands, tools: Res<ToolState>, mut entities:
             });
 
             // Bottom-left inspector
+            let mut inspector_panel = base_panel_node();
+            inspector_panel.flex_direction = FlexDirection::Column;
+            inspector_panel.row_gap = Val::Px(4.0);
+            inspector_panel.bottom = Val::Px(12.0);
+            inspector_panel.left = Val::Px(12.0);
+            inspector_panel.min_width = Val::Px(220.0);
             root.spawn((
-                panel_style(),
-                Node {
-                    bottom: Val::Px(12.0),
-                    left: Val::Px(12.0),
-                    min_width: Val::Px(220.0),
-                    ..default()
-                },
+                inspector_panel,
                 BackgroundColor(Color::srgba(0.08, 0.09, 0.11, 0.85)),
             ))
             .with_children(|inspector| {
@@ -198,14 +194,14 @@ fn setup_factory_ui(mut commands: Commands, tools: Res<ToolState>, mut entities:
             });
 
             // Bottom-right throughput + depth
+            let mut hud_panel = base_panel_node();
+            hud_panel.flex_direction = FlexDirection::Column;
+            hud_panel.row_gap = Val::Px(4.0);
+            hud_panel.bottom = Val::Px(12.0);
+            hud_panel.right = Val::Px(12.0);
+            hud_panel.align_items = AlignItems::FlexEnd;
             root.spawn((
-                panel_style(),
-                Node {
-                    bottom: Val::Px(12.0),
-                    right: Val::Px(12.0),
-                    align_items: AlignItems::FlexEnd,
-                    ..default()
-                },
+                hud_panel,
                 BackgroundColor(Color::srgba(0.08, 0.09, 0.11, 0.85)),
             ))
             .with_children(|hud| {
@@ -351,14 +347,16 @@ mod tests {
 
     #[test]
     fn factory_ui_plugin_builds_without_panic() {
-        App::new()
-            .add_plugins(FactoryUiPlugin)
+        let mut app = App::new();
+        app.add_plugins((MinimalPlugins, FactoryUiPlugin))
             .init_resource::<ToolState>()
+            .init_resource::<InspectedCell>()
             .insert_resource(GridSimulation(boxes_sim::Simulation::new()))
             .init_resource::<SimPlayback>()
             .init_resource::<SimTickStats>()
             .init_resource::<ActiveView>()
             .init_resource::<ViewSlice>();
+        app.update();
     }
 
     #[test]
