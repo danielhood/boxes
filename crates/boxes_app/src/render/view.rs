@@ -181,8 +181,9 @@ impl OrthoView {
             (Self::Front, ScreenDir::Left) => Self::Left,
             (Self::Front, ScreenDir::Right) => Self::Right,
 
-            (Self::Back, ScreenDir::Up) => Self::Top,
-            (Self::Back, ScreenDir::Down) => Self::Bottom,
+            // Vertical orbit: Top → Back → Bottom → Front → Top
+            (Self::Back, ScreenDir::Up) => Self::Bottom,
+            (Self::Back, ScreenDir::Down) => Self::Top,
             (Self::Back, ScreenDir::Left) => Self::Right,
             (Self::Back, ScreenDir::Right) => Self::Left,
 
@@ -368,6 +369,34 @@ mod tests {
         assert_eq!(OrthoView::Top.rotate(ScreenDir::Down), OrthoView::Front);
         assert_eq!(OrthoView::Top.rotate(ScreenDir::Left), OrthoView::Left);
         assert_eq!(OrthoView::Top.rotate(ScreenDir::Right), OrthoView::Right);
+    }
+
+    #[test]
+    fn ctrl_up_orbits_top_back_bottom_front_top() {
+        let mut view = OrthoView::Top;
+        for expected in [
+            OrthoView::Back,
+            OrthoView::Bottom,
+            OrthoView::Front,
+            OrthoView::Top,
+        ] {
+            view = view.rotate(ScreenDir::Up);
+            assert_eq!(view, expected);
+        }
+    }
+
+    #[test]
+    fn ctrl_down_orbits_top_front_bottom_back_top() {
+        let mut view = OrthoView::Top;
+        for expected in [
+            OrthoView::Front,
+            OrthoView::Bottom,
+            OrthoView::Back,
+            OrthoView::Top,
+        ] {
+            view = view.rotate(ScreenDir::Down);
+            assert_eq!(view, expected);
+        }
     }
 
     #[test]
