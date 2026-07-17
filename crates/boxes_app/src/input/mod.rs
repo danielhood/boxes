@@ -195,8 +195,7 @@ fn pointer_select_system(
     active: Res<ActiveView>,
     camera_entity: Res<GridCameraEntity>,
     camera_query: Query<(&Camera, &GlobalTransform), With<GridCamera>>,
-    selection: Res<SelectedCell>,
-    mut selection_mut: ResMut<SelectedCell>,
+    mut selection: ResMut<SelectedCell>,
     sim: Res<GridSimulation>,
 ) {
     let select_held = mouse.pressed(MouseButton::Left);
@@ -221,14 +220,14 @@ fn pointer_select_system(
     let Some(pos) = pick_surface_cell(&sim.0, active.0, depth, origin, direction) else {
         if select_pressed {
             if let Some(pos) = pick::pick_slice_cell(active.0, depth, origin, direction) {
-                set_selection(&mut selection_mut, pos);
+                set_selection(&mut selection, pos);
             }
         }
         return;
     };
 
-    if select_pressed || (select_held && selection_mut.pos != pos) {
-        set_selection(&mut selection_mut, pos);
+    if select_pressed || (select_held && selection.pos != pos) {
+        set_selection(&mut selection, pos);
     }
 }
 
