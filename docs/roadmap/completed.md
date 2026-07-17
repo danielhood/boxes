@@ -61,6 +61,6 @@ Shipped work is logged here with links to specs and merge PRs. Promote the next 
 
 | Slice | Summary | Spec | Shipped |
 |-------|---------|------|---------|
-| P5.1 | Persistent selected cell, six-face view orbit, zoom, pointer remap, help overlay | [P5.1-selection-view-nav](../specs/P5.1-selection-view-nav.md) | _PR pending_ |
+| P5.1 | Persistent selected cell, six-face view orbit, zoom, pointer remap, help overlay | [P5.1-selection-view-nav](../specs/P5.1-selection-view-nav.md) | [#12](https://github.com/danielhood/boxes/pull/12) |
 
 **Exit criteria met:** Always-on `SelectedCell`; cameras frame selection; Ctrl+arrows orbit six ortho faces; LMB select / RMB tool; inspector follows selection; `?` help overlay; slice depth derived from selection.
