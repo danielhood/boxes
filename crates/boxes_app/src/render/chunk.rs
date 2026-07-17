@@ -7,7 +7,7 @@ use boxes_sim::{Cell, ChunkCoord, WorldPos};
 
 use super::materials::GridMaterials;
 use super::surface::{surface_cells_for_chunk, visible_surface};
-use super::view::{cell_to_world, ActiveView, OrthoView};
+use super::view::{cell_to_world, ActiveView, ViewPose};
 use crate::input::{slice_depth, SelectedCell};
 
 /// Instance cube spawned for one visible surface cell.
@@ -47,11 +47,11 @@ pub fn queue_initial_rebuild(mut pending: ResMut<PendingChunkRebuilds>) {
 
 pub fn mark_view_change(
     active: Res<ActiveView>,
-    mut last_view: Local<Option<OrthoView>>,
+    mut last_pose: Local<Option<ViewPose>>,
     mut pending: ResMut<PendingChunkRebuilds>,
 ) {
-    if *last_view != Some(active.face) {
-        *last_view = Some(active.face);
+    if *last_pose != Some(active.pose) {
+        *last_pose = Some(active.pose);
         pending.mark_all();
     }
 }
@@ -62,7 +62,7 @@ pub fn mark_selection_depth_change(
     mut last_depth: Local<Option<u16>>,
     mut pending: ResMut<PendingChunkRebuilds>,
 ) {
-    let depth = slice_depth(active.face, &selection);
+    let depth = slice_depth(active.pose, &selection);
     if *last_depth != Some(depth) {
         *last_depth = Some(depth);
         pending.mark_all();
@@ -82,8 +82,8 @@ pub fn rebuild_chunk_instances(
         return;
     }
 
-    let slice_depth = slice_depth(active.face, &selection);
-    let surface = visible_surface(&sim.0, active.face, slice_depth);
+    let slice_depth = slice_depth(active.pose, &selection);
+    let surface = visible_surface(&sim.0, active.pose, slice_depth);
 
     let targets: HashSet<ChunkCoord> = if pending.rebuild_all {
         surface
@@ -142,6 +142,7 @@ mod tests {
     use super::*;
     use boxes_sim::{make_generator, Simulation};
 
+    use super::super::OrthoView;
     use super::super::surface::unclipped_slice_depth;
 
     #[test]
@@ -149,7 +150,11 @@ mod tests {
         let mut sim = Simulation::new();
         sim.world
             .set(WorldPos::new(33, 40, 33), make_generator(20, 1));
-        let surface = visible_surface(&sim, OrthoView::Top, unclipped_slice_depth(OrthoView::Top));
+        let surface = visible_surface(
+            &sim,
+            OrthoView::Top.default_pose(),
+            unclipped_slice_depth(OrthoView::Top),
+        );
         let coord = WorldPos::new(33, 40, 33).chunk_coord();
         let cells = surface_cells_for_chunk(&surface, coord);
         assert_eq!(cells.len(), 1);

@@ -4,7 +4,7 @@ use std::collections::HashMap;
 
 use boxes_sim::{Cell, ChunkCoord, Simulation, WorldPos, CHUNK_SIZE, CHUNKS_PER_AXIS, WORLD_SIZE};
 
-use super::view::OrthoView;
+use super::view::{OrthoView, ViewPose};
 
 /// 2D projection key for a view face.
 #[must_use]
@@ -45,9 +45,9 @@ pub fn unclipped_slice_depth(view: OrthoView) -> u16 {
 
 /// True when the cell is at or behind the slice plane (not between slice and camera).
 #[must_use]
-pub fn is_cell_visible_at_slice(pos: WorldPos, view: OrthoView, slice_depth: u16) -> bool {
-    let depth = cell_depth(pos, view);
-    if view.slice_uses_lte() {
+pub fn is_cell_visible_at_slice(pos: WorldPos, pose: ViewPose, slice_depth: u16) -> bool {
+    let depth = cell_depth(pos, pose.face());
+    if pose.slice_uses_lte() {
         depth <= slice_depth
     } else {
         depth >= slice_depth
@@ -58,13 +58,14 @@ pub fn is_cell_visible_at_slice(pos: WorldPos, view: OrthoView, slice_depth: u16
 #[must_use]
 pub fn visible_surface(
     sim: &Simulation,
-    view: OrthoView,
+    pose: ViewPose,
     slice_depth: u16,
 ) -> HashMap<(u16, u16), (WorldPos, Cell)> {
+    let view = pose.face();
     let mut surface = HashMap::new();
 
     for (pos, cell) in sim.world.chunks.iter_non_empty() {
-        if cell.is_empty() || !is_cell_visible_at_slice(pos, view, slice_depth) {
+        if cell.is_empty() || !is_cell_visible_at_slice(pos, pose, slice_depth) {
             continue;
         }
 
@@ -131,7 +132,11 @@ mod tests {
         sim.world
             .set(WorldPos::new(10, 5, 10), make_generator(20, 2));
 
-        let surface = visible_surface(&sim, OrthoView::Top, unclipped_slice_depth(OrthoView::Top));
+        let surface = visible_surface(
+            &sim,
+            OrthoView::Top.default_pose(),
+            unclipped_slice_depth(OrthoView::Top),
+        );
         let (_, cell) = surface[&(10, 10)];
         assert_eq!(cell.state, 2);
     }
@@ -144,8 +149,11 @@ mod tests {
         sim.world
             .set(WorldPos::new(10, 5, 10), make_generator(20, 2));
 
-        let surface =
-            visible_surface(&sim, OrthoView::Bottom, unclipped_slice_depth(OrthoView::Bottom));
+        let surface = visible_surface(
+            &sim,
+            OrthoView::Bottom.default_pose(),
+            unclipped_slice_depth(OrthoView::Bottom),
+        );
         let (_, cell) = surface[&(10, 10)];
         assert_eq!(cell.state, 1);
     }
@@ -158,8 +166,11 @@ mod tests {
         sim.world
             .set(WorldPos::new(5, 5, 9), make_generator(20, 2));
 
-        let surface =
-            visible_surface(&sim, OrthoView::Back, unclipped_slice_depth(OrthoView::Back));
+        let surface = visible_surface(
+            &sim,
+            OrthoView::Back.default_pose(),
+            unclipped_slice_depth(OrthoView::Back),
+        );
         let (_, cell) = surface[&(5, 5)];
         assert_eq!(cell.state, 1);
     }
@@ -172,8 +183,11 @@ mod tests {
         sim.world
             .set(WorldPos::new(9, 5, 5), make_generator(20, 2));
 
-        let surface =
-            visible_surface(&sim, OrthoView::Right, unclipped_slice_depth(OrthoView::Right));
+        let surface = visible_surface(
+            &sim,
+            OrthoView::Right.default_pose(),
+            unclipped_slice_depth(OrthoView::Right),
+        );
         let (_, cell) = surface[&(5, 5)];
         assert_eq!(cell.state, 2);
     }
@@ -186,7 +200,11 @@ mod tests {
         sim.world
             .set(WorldPos::new(5, 5, 9), make_generator(20, 2));
 
-        let surface = visible_surface(&sim, OrthoView::Front, unclipped_slice_depth(OrthoView::Front));
+        let surface = visible_surface(
+            &sim,
+            OrthoView::Front.default_pose(),
+            unclipped_slice_depth(OrthoView::Front),
+        );
         let (_, cell) = surface[&(5, 5)];
         assert_eq!(cell.state, 2);
     }
@@ -199,7 +217,7 @@ mod tests {
         sim.world
             .set(WorldPos::new(10, 8, 10), make_generator(20, 2));
 
-        let surface = visible_surface(&sim, OrthoView::Top, 5);
+        let surface = visible_surface(&sim, OrthoView::Top.default_pose(), 5);
         let (pos, cell) = surface[&(10, 10)];
         assert_eq!(pos, WorldPos::new(10, 3, 10));
         assert_eq!(cell.state, 1);
@@ -213,7 +231,7 @@ mod tests {
         sim.world
             .set(WorldPos::new(8, 5, 5), make_generator(20, 2));
 
-        let surface = visible_surface(&sim, OrthoView::Left, 5);
+        let surface = visible_surface(&sim, OrthoView::Left.default_pose(), 5);
         let (pos, cell) = surface[&(5, 5)];
         assert_eq!(pos, WorldPos::new(8, 5, 5));
         assert_eq!(cell.state, 2);
@@ -223,22 +241,22 @@ mod tests {
     fn is_cell_visible_at_slice_respects_view_axis() {
         assert!(is_cell_visible_at_slice(
             WorldPos::new(10, 5, 10),
-            OrthoView::Top,
+            OrthoView::Top.default_pose(),
             5
         ));
         assert!(!is_cell_visible_at_slice(
             WorldPos::new(10, 6, 10),
-            OrthoView::Top,
+            OrthoView::Top.default_pose(),
             5
         ));
         assert!(is_cell_visible_at_slice(
             WorldPos::new(8, 5, 5),
-            OrthoView::Left,
+            OrthoView::Left.default_pose(),
             5
         ));
         assert!(!is_cell_visible_at_slice(
             WorldPos::new(4, 5, 5),
-            OrthoView::Left,
+            OrthoView::Left.default_pose(),
             5
         ));
     }

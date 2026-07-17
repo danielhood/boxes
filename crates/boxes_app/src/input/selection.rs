@@ -3,7 +3,7 @@
 use bevy::prelude::*;
 use boxes_sim::{Simulation, WorldPos, WORLD_SIZE};
 
-use crate::render::OrthoView;
+use crate::render::ViewPose;
 
 /// World center fallback when no seeded cells exist.
 pub const FALLBACK_SELECTION: WorldPos = WorldPos::new(250, 250, 250);
@@ -38,8 +38,8 @@ pub fn set_selection(cell: &mut SelectedCell, pos: WorldPos) {
 }
 
 #[must_use]
-pub fn slice_depth(view: OrthoView, selection: &SelectedCell) -> u16 {
-    view.slice_depth(selection.pos)
+pub fn slice_depth(pose: ViewPose, selection: &SelectedCell) -> u16 {
+    pose.slice_depth(selection.pos)
 }
 
 /// Pick a random non-empty cell from `candidates`, or world center.
@@ -68,6 +68,7 @@ pub fn random_selection(candidates: &[WorldPos], sim: &Simulation) -> WorldPos {
 mod tests {
     use super::*;
     use boxes_sim::make_generator;
+    use crate::render::OrthoView;
 
     #[test]
     fn set_selection_clamps_to_world_bounds() {
@@ -84,8 +85,11 @@ mod tests {
         let selection = SelectedCell {
             pos: WorldPos::new(5, 9, 3),
         };
-        assert_eq!(slice_depth(OrthoView::Top, &selection), 9);
-        assert_eq!(slice_depth(OrthoView::Front, &selection), 3);
+        assert_eq!(slice_depth(ViewPose::top_default(), &selection), 9);
+        assert_eq!(
+            slice_depth(OrthoView::Front.default_pose(), &selection),
+            3
+        );
     }
 
     #[test]

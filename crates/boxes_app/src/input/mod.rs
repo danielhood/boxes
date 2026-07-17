@@ -121,7 +121,7 @@ fn keyboard_nav_system(
         return;
     };
 
-    let next = active.face.nudge_screen(selection.pos, dir);
+    let next = active.pose.nudge_screen(selection.pos, dir);
     set_selection(&mut selection, next);
 }
 
@@ -146,7 +146,7 @@ fn slice_keyboard_system(
     let Some(delta) = slice_depth_delta(&keyboard) else {
         return;
     };
-    let next = active.face.nudge_depth(selection.pos, delta);
+    let next = active.pose.nudge_depth(selection.pos, delta);
     set_selection(&mut selection, next);
 }
 
@@ -182,7 +182,7 @@ fn wheel_input_system(
     }
 
     let steps = delta.signum() as i16;
-    let next = active.face.nudge_depth(selection.pos, steps);
+    let next = active.pose.nudge_depth(selection.pos, steps);
     set_selection(&mut selection, next);
 }
 
@@ -213,8 +213,8 @@ fn pointer_select_system(
         return;
     };
 
-    let depth = slice_depth(active.face, &selection);
-    let Some(pos) = pick_slice_cell(active.face, depth, origin, direction) else {
+    let depth = slice_depth(active.pose, &selection);
+    let Some(pos) = pick_slice_cell(active.pose, depth, origin, direction) else {
         return;
     };
 
@@ -256,13 +256,13 @@ fn pointer_tool_system(
         return;
     };
 
-    let view = active.face;
-    let depth = slice_depth(view, &selection);
+    let pose = active.pose;
+    let depth = slice_depth(pose, &selection);
 
     let target = match tools.active {
-        ActiveTool::Erase => pick_surface_cell(&sim.0, view, depth, origin, direction),
-        ActiveTool::Place => pick_slice_cell(view, depth, origin, direction),
-        ActiveTool::Inspect => pick_surface_cell(&sim.0, view, depth, origin, direction),
+        ActiveTool::Erase => pick_surface_cell(&sim.0, pose, depth, origin, direction),
+        ActiveTool::Place => pick_slice_cell(pose, depth, origin, direction),
+        ActiveTool::Inspect => pick_surface_cell(&sim.0, pose, depth, origin, direction),
     };
 
     let Some(pos) = target else {
@@ -280,13 +280,13 @@ fn pointer_tool_system(
                 return;
             }
             sim.0.world.set(pos, Cell::empty());
-            queue_rebuild_for_positions(&[pos], view, &mut pending);
+            queue_rebuild_for_positions(&[pos], pose.face(), &mut pending);
         }
         ActiveTool::Place => {
             let cell = tools.selected_preset().to_cell();
             sim.0.world.set(pos, cell);
             sim.0.mark_dirty(pos);
-            queue_rebuild_for_positions(&[pos], view, &mut pending);
+            queue_rebuild_for_positions(&[pos], pose.face(), &mut pending);
         }
         ActiveTool::Inspect => {
             let cell = sim.0.world.get(pos);

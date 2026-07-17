@@ -386,8 +386,8 @@ fn update_factory_text(
                 );
             }
             FactoryTextPanel::DepthSlice => {
-                let view = active.face;
-                let depth = slice_depth(view, &selection);
+                let view = active.face();
+                let depth = slice_depth(active.pose, &selection);
                 let axis = view.depth_axis_label();
                 **text = format!("depth {axis}={depth} ({})", view.label());
             }
