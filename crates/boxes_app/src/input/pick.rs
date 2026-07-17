@@ -85,7 +85,7 @@ pub fn world_hit_to_uv(view: OrthoView, hit: Vec3) -> Option<(u16, u16)> {
         ),
         OrthoView::Back => (
             (WORLD_CENTER - hit.x).round() as i32,
-            (hit.y + WORLD_CENTER).round() as i32,
+            (WORLD_CENTER - hit.y).round() as i32,
         ),
         OrthoView::Left => (
             (hit.y + WORLD_CENTER).round() as i32,
@@ -112,7 +112,7 @@ pub fn uv_depth_to_cell(view: OrthoView, u: u16, v: u16, depth: u16) -> WorldPos
         OrthoView::Top => WorldPos::new(u, depth, v),
         OrthoView::Bottom => WorldPos::new(u, depth, WORLD_SIZE as u16 - 1 - v),
         OrthoView::Front => WorldPos::new(u, v, depth),
-        OrthoView::Back => WorldPos::new(WORLD_SIZE as u16 - 1 - u, v, depth),
+        OrthoView::Back => WorldPos::new(WORLD_SIZE as u16 - 1 - u, WORLD_SIZE as u16 - 1 - v, depth),
         OrthoView::Left => WorldPos::new(depth, u, v),
         OrthoView::Right => WorldPos::new(depth, WORLD_SIZE as u16 - 1 - u, WORLD_SIZE as u16 - 1 - v),
     }
@@ -197,7 +197,7 @@ mod tests {
     fn back_view_world_hit_maps_xy() {
         let hit = Vec3::new(WORLD_CENTER - 5.0, 7.0 - WORLD_CENTER, 0.0);
         let uv = world_hit_to_uv(OrthoView::Back, hit).unwrap();
-        assert_eq!(uv, (5, 7));
+        assert_eq!(uv, (5, WORLD_SIZE as u16 - 1 - 7));
     }
 
     #[test]
@@ -230,7 +230,7 @@ mod tests {
                 OrthoView::Top | OrthoView::Bottom => (pos.x, if matches!(view, OrthoView::Top) { pos.z } else { WORLD_SIZE as u16 - 1 - pos.z }),
                 OrthoView::Front | OrthoView::Back => (
                     if matches!(view, OrthoView::Front) { pos.x } else { WORLD_SIZE as u16 - 1 - pos.x },
-                    pos.y,
+                    if matches!(view, OrthoView::Front) { pos.y } else { WORLD_SIZE as u16 - 1 - pos.y },
                 ),
                 OrthoView::Left | OrthoView::Right => (
                     if matches!(view, OrthoView::Left) { pos.y } else { WORLD_SIZE as u16 - 1 - pos.y },

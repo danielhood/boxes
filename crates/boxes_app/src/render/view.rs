@@ -146,8 +146,8 @@ impl OrthoView {
             (Self::Front, ScreenDir::Left) => (-1, 0, 0),
             (Self::Front, ScreenDir::Right) => (1, 0, 0),
 
-            (Self::Back, ScreenDir::Up) => (0, 1, 0),
-            (Self::Back, ScreenDir::Down) => (0, -1, 0),
+            (Self::Back, ScreenDir::Up) => (0, -1, 0),
+            (Self::Back, ScreenDir::Down) => (0, 1, 0),
             (Self::Back, ScreenDir::Left) => (1, 0, 0),
             (Self::Back, ScreenDir::Right) => (-1, 0, 0),
 
@@ -218,7 +218,8 @@ impl OrthoView {
         match self {
             Self::Top => Vec3::NEG_Z,
             Self::Bottom => Vec3::Z,
-            Self::Front | Self::Back | Self::Left | Self::Right => Vec3::Y,
+            Self::Front | Self::Left | Self::Right => Vec3::Y,
+            Self::Back => Vec3::NEG_Y,
         }
     }
 }
