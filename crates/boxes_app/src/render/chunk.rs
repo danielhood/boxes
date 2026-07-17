@@ -50,8 +50,8 @@ pub fn mark_view_change(
     mut last_view: Local<Option<OrthoView>>,
     mut pending: ResMut<PendingChunkRebuilds>,
 ) {
-    if *last_view != Some(active.0) {
-        *last_view = Some(active.0);
+    if *last_view != Some(active.face) {
+        *last_view = Some(active.face);
         pending.mark_all();
     }
 }
@@ -62,7 +62,7 @@ pub fn mark_selection_depth_change(
     mut last_depth: Local<Option<u16>>,
     mut pending: ResMut<PendingChunkRebuilds>,
 ) {
-    let depth = slice_depth(active.0, &selection);
+    let depth = slice_depth(active.face, &selection);
     if *last_depth != Some(depth) {
         *last_depth = Some(depth);
         pending.mark_all();
@@ -82,8 +82,8 @@ pub fn rebuild_chunk_instances(
         return;
     }
 
-    let slice_depth = slice_depth(active.0, &selection);
-    let surface = visible_surface(&sim.0, active.0, slice_depth);
+    let slice_depth = slice_depth(active.face, &selection);
+    let surface = visible_surface(&sim.0, active.face, slice_depth);
 
     let targets: HashSet<ChunkCoord> = if pending.rebuild_all {
         surface

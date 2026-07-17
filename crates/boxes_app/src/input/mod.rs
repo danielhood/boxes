@@ -121,7 +121,7 @@ fn keyboard_nav_system(
         return;
     };
 
-    let next = active.0.nudge_screen(selection.pos, dir);
+    let next = active.face.nudge_screen(selection.pos, dir);
     set_selection(&mut selection, next);
 }
 
@@ -146,7 +146,7 @@ fn slice_keyboard_system(
     let Some(delta) = slice_depth_delta(&keyboard) else {
         return;
     };
-    let next = active.0.nudge_depth(selection.pos, delta);
+    let next = active.face.nudge_depth(selection.pos, delta);
     set_selection(&mut selection, next);
 }
 
@@ -182,7 +182,7 @@ fn wheel_input_system(
     }
 
     let steps = delta.signum() as i16;
-    let next = active.0.nudge_depth(selection.pos, steps);
+    let next = active.face.nudge_depth(selection.pos, steps);
     set_selection(&mut selection, next);
 }
 
@@ -213,8 +213,8 @@ fn pointer_select_system(
         return;
     };
 
-    let depth = slice_depth(active.0, &selection);
-    let Some(pos) = pick_slice_cell(active.0, depth, origin, direction) else {
+    let depth = slice_depth(active.face, &selection);
+    let Some(pos) = pick_slice_cell(active.face, depth, origin, direction) else {
         return;
     };
 
@@ -256,7 +256,7 @@ fn pointer_tool_system(
         return;
     };
 
-    let view = active.0;
+    let view = active.face;
     let depth = slice_depth(view, &selection);
 
     let target = match tools.active {
@@ -307,7 +307,7 @@ mod tests {
     fn input_plugin_builds_without_panic() {
         App::new()
             .add_plugins(InputPlugin)
-            .insert_resource(ActiveView(crate::render::OrthoView::Top))
+            .insert_resource(ActiveView::default())
             .insert_resource(GridCameraEntity(Entity::PLACEHOLDER));
     }
 

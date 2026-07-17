@@ -164,40 +164,69 @@ impl OrthoView {
     }
 
     #[must_use]
-    pub const fn rotate(self, dir: ScreenDir) -> Self {
+    pub const fn rotate_vertical(self, dir: ScreenDir) -> Self {
         match (self, dir) {
             (Self::Top, ScreenDir::Up) => Self::Back,
             (Self::Top, ScreenDir::Down) => Self::Front,
-            (Self::Top, ScreenDir::Left) => Self::Left,
-            (Self::Top, ScreenDir::Right) => Self::Right,
 
             (Self::Bottom, ScreenDir::Up) => Self::Front,
             (Self::Bottom, ScreenDir::Down) => Self::Back,
-            // Horizontal orbit: Top → Left → Bottom → Right → Top
-            (Self::Bottom, ScreenDir::Left) => Self::Right,
-            (Self::Bottom, ScreenDir::Right) => Self::Left,
 
             (Self::Front, ScreenDir::Up) => Self::Top,
             (Self::Front, ScreenDir::Down) => Self::Bottom,
-            (Self::Front, ScreenDir::Left) => Self::Left,
-            (Self::Front, ScreenDir::Right) => Self::Right,
 
             // Vertical orbit: Top → Back → Bottom → Front → Top
             (Self::Back, ScreenDir::Up) => Self::Bottom,
             (Self::Back, ScreenDir::Down) => Self::Top,
-            (Self::Back, ScreenDir::Left) => Self::Right,
-            (Self::Back, ScreenDir::Right) => Self::Left,
 
             (Self::Left, ScreenDir::Up) => Self::Top,
             (Self::Left, ScreenDir::Down) => Self::Bottom,
-            (Self::Left, ScreenDir::Left) => Self::Bottom,
-            (Self::Left, ScreenDir::Right) => Self::Top,
 
             (Self::Right, ScreenDir::Up) => Self::Top,
             (Self::Right, ScreenDir::Down) => Self::Bottom,
-            (Self::Right, ScreenDir::Left) => Self::Top,
-            (Self::Right, ScreenDir::Right) => Self::Bottom,
+
+            _ => self,
         }
+    }
+
+    #[must_use]
+    pub const fn face_normal(self) -> (i8, i8, i8) {
+        match self {
+            Self::Top => (0, 1, 0),
+            Self::Bottom => (0, -1, 0),
+            Self::Front => (0, 0, 1),
+            Self::Back => (0, 0, -1),
+            Self::Left => (-1, 0, 0),
+            Self::Right => (1, 0, 0),
+        }
+    }
+
+    #[must_use]
+    pub const fn from_normal(n: (i8, i8, i8)) -> Self {
+        match n {
+            (0, 1, 0) => Self::Top,
+            (0, -1, 0) => Self::Bottom,
+            (0, 0, 1) => Self::Front,
+            (0, 0, -1) => Self::Back,
+            (-1, 0, 0) => Self::Left,
+            (1, 0, 0) => Self::Right,
+            _ => Self::Top,
+        }
+    }
+
+    #[must_use]
+    pub const fn rotate_horizontal(self, dir: ScreenDir, axis: HorizontalOrbitAxis) -> Self {
+        let (x, y, z) = self.face_normal();
+        let next = match (axis, dir) {
+            // Equatorial ring (Top → Left → Bottom → Right) around world Z.
+            (HorizontalOrbitAxis::Z, ScreenDir::Left) => (-y, x, z),
+            (HorizontalOrbitAxis::Z, ScreenDir::Right) => (y, -x, z),
+            // Meridian ring (Back → Right → Front → Left) around world Y.
+            (HorizontalOrbitAxis::Y, ScreenDir::Left) => (z, y, -x),
+            (HorizontalOrbitAxis::Y, ScreenDir::Right) => (-z, y, x),
+            _ => (x, y, z),
+        };
+        Self::from_normal(next)
     }
 
     /// Camera position offset from look-at target (along outward normal × distance).
@@ -225,13 +254,58 @@ impl OrthoView {
     }
 }
 
+/// Axis for horizontal view orbit (Ctrl+Left/Right).
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub enum HorizontalOrbitAxis {
+    /// Top/Bottom faces: Top → Left → Bottom → Right.
+    #[default]
+    Z,
+    /// Front/Back faces: Back → Right → Front → Left.
+    Y,
+}
+
+/// Currently displayed orthographic face and horizontal orbit context.
+#[derive(Resource, Clone, Copy, Debug)]
+pub struct ActiveView {
+    pub face: OrthoView,
+    pub horizontal_axis: HorizontalOrbitAxis,
+}
+
+impl Default for ActiveView {
+    fn default() -> Self {
+        Self {
+            face: OrthoView::Top,
+            horizontal_axis: HorizontalOrbitAxis::Z,
+        }
+    }
+}
+
+impl ActiveView {
+    pub fn rotate(&mut self, dir: ScreenDir) {
+        match dir {
+            ScreenDir::Up | ScreenDir::Down => {
+                self.face = self.face.rotate_vertical(dir);
+                self.horizontal_axis = match self.face {
+                    OrthoView::Top | OrthoView::Bottom => HorizontalOrbitAxis::Z,
+                    OrthoView::Front | OrthoView::Back => HorizontalOrbitAxis::Y,
+                    OrthoView::Left | OrthoView::Right => self.horizontal_axis,
+                };
+            }
+            ScreenDir::Left | ScreenDir::Right => {
+                self.face = self.face.rotate_horizontal(dir, self.horizontal_axis);
+            }
+        }
+    }
+
+    pub fn snap_top(&mut self) {
+        self.face = OrthoView::Top;
+        self.horizontal_axis = HorizontalOrbitAxis::Z;
+    }
+}
+
 /// Handle for the single grid orthographic camera.
 #[derive(Resource)]
 pub struct GridCameraEntity(pub Entity);
-
-/// Currently displayed orthographic face.
-#[derive(Resource, Default)]
-pub struct ActiveView(pub OrthoView);
 
 /// Zoom level — visible world units along the orthographic viewport height.
 #[derive(Resource, Clone, Copy, Debug)]
@@ -295,7 +369,7 @@ pub fn setup_cameras(mut commands: Commands, mut active: ResMut<ActiveView>) {
         .id();
 
     commands.insert_resource(GridCameraEntity(camera));
-    active.0 = OrthoView::Top;
+    active.snap_top();
 }
 
 pub fn apply_camera_framing(
@@ -308,7 +382,7 @@ pub fn apply_camera_framing(
 ) {
     let target = cell_to_world(selection.pos);
     let distance = WORLD_SIZE as f32 * 1.2;
-    let view = active.0;
+    let view = active.face;
 
     if let Ok(mut transform) = transforms.get_mut(camera_entity.0) {
         *transform = Transform::from_translation(target + view.camera_offset(distance))
@@ -352,12 +426,12 @@ pub fn view_rotate_system(
     let Some(dir) = screen_dir_from_arrow(&keyboard) else {
         return;
     };
-    active.0 = active.0.rotate(dir);
+    active.rotate(dir);
 }
 
 pub fn snap_top_view_system(keyboard: Res<ButtonInput<KeyCode>>, mut active: ResMut<ActiveView>) {
     if keyboard.just_pressed(KeyCode::KeyT) {
-        active.0 = OrthoView::Top;
+        active.snap_top();
     }
 }
 
@@ -365,76 +439,142 @@ pub fn snap_top_view_system(keyboard: Res<ButtonInput<KeyCode>>, mut active: Res
 mod tests {
     use super::*;
 
+    fn rotate(mut active: ActiveView, dir: ScreenDir) -> ActiveView {
+        active.rotate(dir);
+        active
+    }
+
     #[test]
     fn top_rotate_adjacency_matches_spec() {
-        assert_eq!(OrthoView::Top.rotate(ScreenDir::Up), OrthoView::Back);
-        assert_eq!(OrthoView::Top.rotate(ScreenDir::Down), OrthoView::Front);
-        assert_eq!(OrthoView::Top.rotate(ScreenDir::Left), OrthoView::Left);
-        assert_eq!(OrthoView::Top.rotate(ScreenDir::Right), OrthoView::Right);
+        assert_eq!(
+            OrthoView::Top.rotate_vertical(ScreenDir::Up),
+            OrthoView::Back
+        );
+        assert_eq!(
+            OrthoView::Top.rotate_vertical(ScreenDir::Down),
+            OrthoView::Front
+        );
+        assert_eq!(
+            OrthoView::Top.rotate_horizontal(ScreenDir::Left, HorizontalOrbitAxis::Z),
+            OrthoView::Left
+        );
+        assert_eq!(
+            OrthoView::Top.rotate_horizontal(ScreenDir::Right, HorizontalOrbitAxis::Z),
+            OrthoView::Right
+        );
     }
 
     #[test]
     fn ctrl_up_orbits_top_back_bottom_front_top() {
-        let mut view = OrthoView::Top;
+        let mut active = ActiveView::default();
         for expected in [
             OrthoView::Back,
             OrthoView::Bottom,
             OrthoView::Front,
             OrthoView::Top,
         ] {
-            view = view.rotate(ScreenDir::Up);
-            assert_eq!(view, expected);
+            active = rotate(active, ScreenDir::Up);
+            assert_eq!(active.face, expected);
         }
     }
 
     #[test]
     fn ctrl_down_orbits_top_front_bottom_back_top() {
-        let mut view = OrthoView::Top;
+        let mut active = ActiveView::default();
         for expected in [
             OrthoView::Front,
             OrthoView::Bottom,
             OrthoView::Back,
             OrthoView::Top,
         ] {
-            view = view.rotate(ScreenDir::Down);
-            assert_eq!(view, expected);
+            active = rotate(active, ScreenDir::Down);
+            assert_eq!(active.face, expected);
         }
     }
 
     #[test]
     fn left_rotate_adjacency_matches_spec() {
-        assert_eq!(OrthoView::Left.rotate(ScreenDir::Up), OrthoView::Top);
-        assert_eq!(OrthoView::Left.rotate(ScreenDir::Down), OrthoView::Bottom);
-        assert_eq!(OrthoView::Left.rotate(ScreenDir::Left), OrthoView::Bottom);
-        assert_eq!(OrthoView::Left.rotate(ScreenDir::Right), OrthoView::Top);
+        assert_eq!(OrthoView::Left.rotate_vertical(ScreenDir::Up), OrthoView::Top);
+        assert_eq!(
+            OrthoView::Left.rotate_vertical(ScreenDir::Down),
+            OrthoView::Bottom
+        );
+        assert_eq!(
+            OrthoView::Left.rotate_horizontal(ScreenDir::Left, HorizontalOrbitAxis::Z),
+            OrthoView::Bottom
+        );
+        assert_eq!(
+            OrthoView::Left.rotate_horizontal(ScreenDir::Right, HorizontalOrbitAxis::Z),
+            OrthoView::Top
+        );
     }
 
     #[test]
     fn ctrl_left_orbits_top_left_bottom_right_top() {
-        let mut view = OrthoView::Top;
+        let mut active = ActiveView::default();
         for expected in [
             OrthoView::Left,
             OrthoView::Bottom,
             OrthoView::Right,
             OrthoView::Top,
         ] {
-            view = view.rotate(ScreenDir::Left);
-            assert_eq!(view, expected);
+            active = rotate(active, ScreenDir::Left);
+            assert_eq!(active.face, expected);
+            assert_eq!(active.horizontal_axis, HorizontalOrbitAxis::Z);
         }
     }
 
     #[test]
     fn ctrl_right_orbits_top_right_bottom_left_top() {
-        let mut view = OrthoView::Top;
+        let mut active = ActiveView::default();
         for expected in [
             OrthoView::Right,
             OrthoView::Bottom,
             OrthoView::Left,
             OrthoView::Top,
         ] {
-            view = view.rotate(ScreenDir::Right);
-            assert_eq!(view, expected);
+            active = rotate(active, ScreenDir::Right);
+            assert_eq!(active.face, expected);
+            assert_eq!(active.horizontal_axis, HorizontalOrbitAxis::Z);
         }
+    }
+
+    #[test]
+    fn ctrl_right_from_back_orbits_back_right_front_left_back() {
+        let mut active = rotate(ActiveView::default(), ScreenDir::Up);
+        assert_eq!(active.face, OrthoView::Back);
+        assert_eq!(active.horizontal_axis, HorizontalOrbitAxis::Y);
+
+        for expected in [
+            OrthoView::Right,
+            OrthoView::Front,
+            OrthoView::Left,
+            OrthoView::Back,
+        ] {
+            active = rotate(active, ScreenDir::Right);
+            assert_eq!(active.face, expected);
+            assert_eq!(active.horizontal_axis, HorizontalOrbitAxis::Y);
+        }
+    }
+
+    #[test]
+    fn meridian_left_on_side_faces_follows_back_ring() {
+        assert_eq!(
+            OrthoView::Left.rotate_horizontal(ScreenDir::Left, HorizontalOrbitAxis::Y),
+            OrthoView::Front
+        );
+        assert_eq!(
+            OrthoView::Left.rotate_horizontal(ScreenDir::Right, HorizontalOrbitAxis::Y),
+            OrthoView::Back
+        );
+        assert_eq!(
+            OrthoView::Right.rotate_horizontal(ScreenDir::Right, HorizontalOrbitAxis::Y),
+            OrthoView::Front
+        );
+        assert_eq!(
+            OrthoView::Right.rotate_horizontal(ScreenDir::Left, HorizontalOrbitAxis::Y),
+            OrthoView::Back
+        );
     }
 
     #[test]

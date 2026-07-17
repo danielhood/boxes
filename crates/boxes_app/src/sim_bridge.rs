@@ -173,7 +173,7 @@ pub fn sim_step_system(
             &mut sim.0,
             &mut dirty,
             &mut stats,
-            active.0,
+            active.face,
             &mut pending,
         );
         return;
@@ -192,7 +192,7 @@ pub fn sim_step_system(
             &mut sim.0,
             &mut dirty,
             &mut stats,
-            active.0,
+            active.face,
             &mut pending,
         );
         steps += 1;
