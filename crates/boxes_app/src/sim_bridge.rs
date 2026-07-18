@@ -8,7 +8,7 @@ use boxes_sim::{
     Direction, ReduceMode, Simulation, WorldPos, MAX_STEPS_PER_FRAME,
 };
 
-use crate::input::{random_selection, SelectedCell};
+use crate::input::{random_selection, OrbitAnchor, SelectedCell};
 use crate::render::{affected_chunks, ActiveView, OrthoView, PendingChunkRebuilds};
 
 /// Simulation playback speed multiplier.
@@ -105,8 +105,12 @@ pub fn setup_simulation(mut commands: Commands) {
     let selection = SelectedCell {
         pos: random_selection(&seed_positions, &sim),
     };
+    let anchor = OrbitAnchor {
+        pos: selection.pos,
+    };
     commands.insert_resource(GridSimulation(sim));
     commands.insert_resource(selection);
+    commands.insert_resource(anchor);
     commands.insert_resource(SimClock::default());
     commands.insert_resource(SimDirtyChunks::default());
     commands.insert_resource(SimPlayback::default());

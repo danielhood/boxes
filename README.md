@@ -41,21 +41,24 @@ A window opens with a seeded demo grid in an orthographic viewport. Close the wi
 
 ### Views
 
-The world is shown one orthographic face at a time, centered on the **selected cell**. The **visible surface** is the outermost cell per column at or behind the current depth slice (derived from the selection); cells between the slice and the camera are hidden.
+The world is shown one orthographic face at a time. The camera frames an **orbit anchor** (look-at point); the **selected cell** is a separate cursor that can move without recentering the view. The **visible surface** is the outermost cell per column at or behind the current depth slice (derived from the selection); cells between the slice and the camera are hidden.
 
 | Input | Action |
 |-------|--------|
-| **Arrow keys** | Move selected cell on the face |
+| **Arrow keys** | Move selected cell on the face (view stays) |
+| **Shift + Arrow keys** | Pan view ¼ viewport on the active slice |
 | **Ctrl + Arrow keys** | Rotate to an adjacent face (six orthographic views) |
+| `C` | Center view on the selected cell |
+| **MMB drag** | Pan view (release snaps orbit anchor) |
 | `T` | Snap to top view |
-| **Ctrl + Mouse wheel** / **Ctrl + `[` / `]`** | Zoom in/out (8–64 cells visible) |
+| **Ctrl + Mouse wheel** / **Ctrl + `[` / `]`** | Zoom in/out around orbit anchor (8–64 cells visible) |
 | `[` / `]` / **Mouse wheel** | Step selection along depth |
 
 ### Selection & tools
 
 | Input | Action |
 |-------|--------|
-| **LMB** | Select cell (drag to track selection) |
+| **LMB** | Select cell on the active slice (drag to track selection) |
 | **RMB** | Apply the active tool on the cell under the cursor |
 | **RMB drag** | Apply the active tool while dragging |
 | `P` | Place tool (default) |

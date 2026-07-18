@@ -1,7 +1,7 @@
 # Completed phases
 
 **Status:** active  
-**Last updated:** 2026-07-17  
+**Last updated:** 2026-07-18  
 **Related:** [active roadmap](active.md), [initial planning](../planning/initial-planning.md)
 
 Shipped work is logged here with links to specs and merge PRs. Promote the next row from [active.md](active.md) when starting new work.
@@ -64,3 +64,11 @@ Shipped work is logged here with links to specs and merge PRs. Promote the next 
 | P5.1 | Persistent selected cell, six-face view orbit, zoom, pointer remap, help overlay | [P5.1-selection-view-nav](../specs/P5.1-selection-view-nav.md) | [#12](https://github.com/danielhood/boxes/pull/12) |
 
 **Exit criteria met:** Always-on `SelectedCell`; cameras frame selection; Ctrl+arrows orbit six ortho faces; LMB select / RMB tool; inspector follows selection; `?` help overlay; slice depth derived from selection.
+
+## P5.2 — Orbit anchor, pan, and decoupled selection (shipped 2026-07-18)
+
+| Slice | Summary | Spec | Shipped |
+|-------|---------|------|---------|
+| P5.2 | Orbit anchor decoupled from selection; pan, recenter, auto-pan | [P5.2-orbit-anchor-pan](../specs/P5.2-orbit-anchor-pan.md) | _PR pending_ |
+
+**Exit criteria met:** `OrbitAnchor` drives camera look-at and zoom; selection moves without recentering; Shift+arrows and MMB pan; `C` recenters; auto-pan when selection leaves viewport; slice clip still from selection.
