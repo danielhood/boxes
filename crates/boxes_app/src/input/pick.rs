@@ -164,6 +164,33 @@ pub fn viewport_half_extents(zoom_cells: f32, aspect: f32) -> (f32, f32) {
     (half_h * aspect, half_h)
 }
 
+/// Anchor UV that keeps `selection_uv` inside the viewport (minimum pan).
+#[must_use]
+pub fn anchor_uv_to_include_selection(
+    anchor_uv: (f32, f32),
+    selection_uv: (f32, f32),
+    zoom_cells: f32,
+    aspect: f32,
+) -> (f32, f32) {
+    let (half_w, half_h) = viewport_half_extents(zoom_cells, aspect);
+    let (sel_u, sel_v) = selection_uv;
+    let (mut u, mut v) = anchor_uv;
+
+    if sel_u - u > half_w {
+        u = sel_u - half_w;
+    } else if u - sel_u > half_w {
+        u = sel_u + half_w;
+    }
+    if sel_v - v > half_h {
+        v = sel_v - half_h;
+    } else if v - sel_v > half_h {
+        v = sel_v + half_h;
+    }
+
+    let max = WORLD_SIZE as f32 - 1.0;
+    (u.clamp(half_w, max - half_w), v.clamp(half_h, max - half_h))
+}
+
 /// True when `selection` lies within the viewport centered on `anchor`.
 #[must_use]
 pub fn selection_in_viewport(
@@ -464,5 +491,29 @@ mod tests {
         let pose = OrthoView::Top.default_pose();
         let pos = cell_at_uv_depth(pose, 10.4, 20.6, 7);
         assert_eq!(pos, WorldPos::new(10, 7, 21));
+    }
+
+    #[test]
+    fn anchor_uv_pans_to_include_off_screen_selection() {
+        let anchor_uv = (100.0, 100.0);
+        let selection_uv = (130.0, 100.0);
+        let (u, v) = anchor_uv_to_include_selection(anchor_uv, selection_uv, 32.0, 1.0);
+        assert!((u - 114.0).abs() < 0.01);
+        assert!((v - 100.0).abs() < 0.01);
+        assert!(selection_in_viewport(
+            OrthoView::Top.default_pose(),
+            WorldPos::new(130, 50, 100),
+            (u, v),
+            32.0,
+            1.0,
+        ));
+    }
+
+    #[test]
+    fn anchor_uv_unchanged_when_selection_visible() {
+        let anchor_uv = (100.0, 100.0);
+        let selection_uv = (105.0, 100.0);
+        let result = anchor_uv_to_include_selection(anchor_uv, selection_uv, 32.0, 1.0);
+        assert_eq!(result, anchor_uv);
     }
 }

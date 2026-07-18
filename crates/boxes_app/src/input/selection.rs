@@ -3,8 +3,10 @@
 use bevy::prelude::*;
 use boxes_sim::{Simulation, WorldPos, WORLD_SIZE};
 
-use crate::input::pick::{cell_at_uv_depth, cell_to_uv_f, pan_anchor_on_slice, pan_uv_delta};
-use crate::render::{ScreenDir, ViewCameraState, ViewPose};
+use crate::input::pick::{
+    anchor_uv_to_include_selection, cell_at_uv_depth, cell_to_uv_f, pan_anchor_on_slice,
+};
+use crate::render::{ViewCameraState, ViewPose};
 
 /// World center fallback when no seeded cells exist.
 pub const FALLBACK_SELECTION: WorldPos = WorldPos::new(250, 250, 250);
@@ -37,10 +39,10 @@ impl Default for OrbitAnchor {
     }
 }
 
-/// Last UV navigation direction for auto-pan after selection moves off-screen.
+/// Set when the most recent selection UV change came from arrow keys (not LMB).
 #[derive(Resource, Clone, Copy, Debug, Default)]
 pub struct LastSelectionMove {
-    pub dir: Option<ScreenDir>,
+    pub keyboard_nav: bool,
 }
 
 /// Middle-mouse pan drag state (sub-cell offset until release).
@@ -76,12 +78,27 @@ pub fn recenter_on_selection(anchor: &mut OrbitAnchor, selection: &SelectedCell)
     anchor.pos = selection.pos;
 }
 
+/// Pan the orbit anchor so `selection` lies within the viewport.
+pub fn pan_anchor_to_show_selection(
+    pose: ViewPose,
+    anchor: &mut OrbitAnchor,
+    selection: WorldPos,
+    active_depth: u16,
+    anchor_uv: (f32, f32),
+    zoom_cells: f32,
+    aspect: f32,
+) {
+    let sel_uv = cell_to_uv_f(pose, selection);
+    let (u, v) = anchor_uv_to_include_selection(anchor_uv, sel_uv, zoom_cells, aspect);
+    anchor.pos = cell_at_uv_depth(pose, u, v, active_depth);
+}
+
 /// Pan the orbit anchor one quarter viewport on the active slice.
 pub fn pan_orbit_anchor(
     pose: ViewPose,
     anchor: &mut OrbitAnchor,
     active_depth: u16,
-    dir: ScreenDir,
+    dir: crate::render::ScreenDir,
     camera: &ViewCameraState,
     aspect: f32,
 ) {
@@ -138,30 +155,6 @@ pub fn finish_mmb_pan(
 #[must_use]
 pub fn slice_depth(pose: ViewPose, selection: &SelectedCell) -> u16 {
     pose.slice_depth(selection.pos)
-}
-
-/// Infer screen direction from a UV delta (for auto-pan after drag selection).
-#[must_use]
-pub fn screen_dir_from_uv_delta(pose: ViewPose, du: f32, dv: f32) -> Option<ScreenDir> {
-    if du.abs() < f32::EPSILON && dv.abs() < f32::EPSILON {
-        return None;
-    }
-    let dirs = [
-        (ScreenDir::Up, pan_uv_delta(pose, ScreenDir::Up, 1.0)),
-        (ScreenDir::Down, pan_uv_delta(pose, ScreenDir::Down, 1.0)),
-        (ScreenDir::Left, pan_uv_delta(pose, ScreenDir::Left, 1.0)),
-        (ScreenDir::Right, pan_uv_delta(pose, ScreenDir::Right, 1.0)),
-    ];
-    let mut best = None;
-    let mut best_dot = f32::NEG_INFINITY;
-    for (dir, (pdu, pdv)) in dirs {
-        let dot = du * pdu + dv * pdv;
-        if dot > best_dot {
-            best_dot = dot;
-            best = Some(dir);
-        }
-    }
-    best
 }
 
 /// Pick a random non-empty cell from `candidates`, or world center.

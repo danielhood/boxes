@@ -11,8 +11,8 @@ pub use pick::{
 #[allow(unused_imports)]
 pub use pick::pick_surface_at_uv;
 pub use selection::{
-    apply_mmb_uv_delta, finish_mmb_pan, orbit_look_at_uv, pan_orbit_anchor, random_selection,
-    recenter_on_selection, screen_dir_from_uv_delta, set_selection, slice_depth,
+    apply_mmb_uv_delta, finish_mmb_pan, orbit_look_at_uv, pan_anchor_to_show_selection,
+    pan_orbit_anchor, random_selection, recenter_on_selection, set_selection, slice_depth,
     LastSelectionMove, MmbPanState, OrbitAnchor, SelectedCell,
 };
 pub use tools::{ActiveTool, PalettePreset, ToolState};
@@ -149,7 +149,7 @@ fn keyboard_nav_system(
 
     let next = active.pose.nudge_screen(selection.pos, dir);
     set_selection(&mut selection, next);
-    last_move.dir = Some(dir);
+    last_move.keyboard_nav = true;
 }
 
 fn pan_keyboard_system(
@@ -264,13 +264,10 @@ fn pointer_select_system(
     camera_entity: Res<GridCameraEntity>,
     camera_query: Query<(&Camera, &GlobalTransform), With<GridCamera>>,
     mut selection: ResMut<SelectedCell>,
-    mut last_move: ResMut<LastSelectionMove>,
-    mut last_uv: Local<Option<(f32, f32)>>,
 ) {
     let select_held = mouse.pressed(MouseButton::Left);
     let select_pressed = mouse.just_pressed(MouseButton::Left);
     if !select_held && !select_pressed {
-        *last_uv = None;
         return;
     }
 
@@ -292,13 +289,7 @@ fn pointer_select_system(
     };
 
     if select_pressed || (select_held && selection.pos != pos) {
-        let prev_uv = last_uv.or_else(|| Some(cell_to_uv_f(active.pose, selection.pos)));
         set_selection(&mut selection, pos);
-        if let Some((pu, pv)) = prev_uv {
-            let (nu, nv) = cell_to_uv_f(active.pose, pos);
-            last_move.dir = screen_dir_from_uv_delta(active.pose, nu - pu, nv - pv);
-        }
-        *last_uv = Some(cell_to_uv_f(active.pose, pos));
     }
 }
 
@@ -308,11 +299,12 @@ fn auto_pan_system(
     selection: Res<SelectedCell>,
     mut anchor: ResMut<OrbitAnchor>,
     camera: Res<ViewCameraState>,
-    last_move: Res<LastSelectionMove>,
+    mut last_move: ResMut<LastSelectionMove>,
 ) {
-    if !selection.is_changed() {
+    if !selection.is_changed() || !last_move.keyboard_nav {
         return;
     }
+    last_move.keyboard_nav = false;
 
     let Ok(window) = windows.single() else {
         return;
@@ -326,12 +318,16 @@ fn auto_pan_system(
         return;
     }
 
-    let Some(dir) = last_move.dir else {
-        return;
-    };
-
     let depth = slice_depth(pose, &selection);
-    pan_orbit_anchor(pose, &mut anchor, depth, dir, &camera, aspect);
+    pan_anchor_to_show_selection(
+        pose,
+        &mut anchor,
+        selection.pos,
+        depth,
+        anchor_uv,
+        camera.zoom_cells,
+        aspect,
+    );
 }
 
 #[allow(clippy::too_many_arguments)]
