@@ -157,6 +157,9 @@ pub fn cell_at_uv_depth(pose: ViewPose, u: f32, v: f32, depth: u16) -> WorldPos 
     uv_depth_to_cell(pose, u, v, depth)
 }
 
+/// Fraction of viewport width/height kept as margin from each edge when auto-panning.
+pub const AUTO_PAN_EDGE_MARGIN: f32 = 0.25;
+
 /// Half-width and half-height of the visible viewport in cell units.
 #[must_use]
 pub fn viewport_half_extents(zoom_cells: f32, aspect: f32) -> (f32, f32) {
@@ -164,7 +167,15 @@ pub fn viewport_half_extents(zoom_cells: f32, aspect: f32) -> (f32, f32) {
     (half_h * aspect, half_h)
 }
 
-/// Anchor UV that keeps `selection_uv` inside the viewport (minimum pan).
+/// Inner half-extents: selection target zone inset by `AUTO_PAN_EDGE_MARGIN` from each edge.
+#[must_use]
+pub fn viewport_inner_half_extents(zoom_cells: f32, aspect: f32) -> (f32, f32) {
+    let (half_w, half_h) = viewport_half_extents(zoom_cells, aspect);
+    let scale = 1.0 - 2.0 * AUTO_PAN_EDGE_MARGIN;
+    (half_w * scale, half_h * scale)
+}
+
+/// Anchor UV that keeps `selection_uv` inside the inner viewport zone (minimum pan).
 #[must_use]
 pub fn anchor_uv_to_include_selection(
     anchor_uv: (f32, f32),
@@ -173,18 +184,19 @@ pub fn anchor_uv_to_include_selection(
     aspect: f32,
 ) -> (f32, f32) {
     let (half_w, half_h) = viewport_half_extents(zoom_cells, aspect);
+    let (inner_half_w, inner_half_h) = viewport_inner_half_extents(zoom_cells, aspect);
     let (sel_u, sel_v) = selection_uv;
     let (mut u, mut v) = anchor_uv;
 
-    if sel_u - u > half_w {
-        u = sel_u - half_w;
-    } else if u - sel_u > half_w {
-        u = sel_u + half_w;
+    if sel_u - u > inner_half_w {
+        u = sel_u - inner_half_w;
+    } else if u - sel_u > inner_half_w {
+        u = sel_u + inner_half_w;
     }
-    if sel_v - v > half_h {
-        v = sel_v - half_h;
-    } else if v - sel_v > half_h {
-        v = sel_v + half_h;
+    if sel_v - v > inner_half_h {
+        v = sel_v - inner_half_h;
+    } else if v - sel_v > inner_half_h {
+        v = sel_v + inner_half_h;
     }
 
     let max = WORLD_SIZE as f32 - 1.0;
@@ -498,7 +510,8 @@ mod tests {
         let anchor_uv = (100.0, 100.0);
         let selection_uv = (130.0, 100.0);
         let (u, v) = anchor_uv_to_include_selection(anchor_uv, selection_uv, 32.0, 1.0);
-        assert!((u - 114.0).abs() < 0.01);
+        // Inner half-width = 16 * 0.5 = 8 → anchor shifts to 122, not flush at edge (114).
+        assert!((u - 122.0).abs() < 0.01);
         assert!((v - 100.0).abs() < 0.01);
         assert!(selection_in_viewport(
             OrthoView::Top.default_pose(),
@@ -507,6 +520,8 @@ mod tests {
             32.0,
             1.0,
         ));
+        let (inner_half_w, _) = viewport_inner_half_extents(32.0, 1.0);
+        assert!((130.0 - u).abs() <= inner_half_w + 0.01);
     }
 
     #[test]
