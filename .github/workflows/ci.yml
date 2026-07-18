@@ -18,10 +18,14 @@ jobs:
       - uses: dorny/paths-filter@v3
         id: filter
         with:
+          # 'every' is required so exclusions apply: with default 'some', '**'
+          # matches .md files and !**/*.md is ignored.
+          predicate-quantifier: every
           filters: |
             code:
               - '**'
               - '!**/*.md'
+              - '!*.md'
 
   build:
     needs: changes
