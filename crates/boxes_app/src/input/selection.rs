@@ -1,9 +1,10 @@
-//! Persistent selected cell — navigation focal point.
+//! Persistent selected cell and orbit anchor — navigation focal points.
 
 use bevy::prelude::*;
 use boxes_sim::{Simulation, WorldPos, WORLD_SIZE};
 
-use crate::render::ViewPose;
+use crate::input::pick::{cell_at_uv_depth, cell_to_uv_f, pan_anchor_on_slice, pan_uv_delta};
+use crate::render::{ScreenDir, ViewCameraState, ViewPose};
 
 /// World center fallback when no seeded cells exist.
 pub const FALLBACK_SELECTION: WorldPos = WorldPos::new(250, 250, 250);
@@ -14,12 +15,40 @@ pub struct SelectedCell {
     pub pos: WorldPos,
 }
 
+/// Camera look-at, rotation pivot, and zoom center.
+#[derive(Resource, Clone, Copy, Debug)]
+pub struct OrbitAnchor {
+    pub pos: WorldPos,
+}
+
 impl Default for SelectedCell {
     fn default() -> Self {
         Self {
             pos: FALLBACK_SELECTION,
         }
     }
+}
+
+impl Default for OrbitAnchor {
+    fn default() -> Self {
+        Self {
+            pos: FALLBACK_SELECTION,
+        }
+    }
+}
+
+/// Last UV navigation direction for auto-pan after selection moves off-screen.
+#[derive(Resource, Clone, Copy, Debug, Default)]
+pub struct LastSelectionMove {
+    pub dir: Option<ScreenDir>,
+}
+
+/// Middle-mouse pan drag state (sub-cell offset until release).
+#[derive(Resource, Clone, Copy, Debug, Default)]
+pub struct MmbPanState {
+    pub dragging: bool,
+    pub anchor_uv_start: (f32, f32),
+    pub uv_offset: (f32, f32),
 }
 
 #[must_use]
@@ -37,9 +66,102 @@ pub fn set_selection(cell: &mut SelectedCell, pos: WorldPos) {
     cell.pos = clamp_pos(pos);
 }
 
+/// Update orbit anchor, clamping to grid bounds.
+pub fn set_orbit_anchor(anchor: &mut OrbitAnchor, pos: WorldPos) {
+    anchor.pos = clamp_pos(pos);
+}
+
+/// Snap the orbit anchor to the selected cell (recenter view).
+pub fn recenter_on_selection(anchor: &mut OrbitAnchor, selection: &SelectedCell) {
+    anchor.pos = selection.pos;
+}
+
+/// Pan the orbit anchor one quarter viewport on the active slice.
+pub fn pan_orbit_anchor(
+    pose: ViewPose,
+    anchor: &mut OrbitAnchor,
+    active_depth: u16,
+    dir: ScreenDir,
+    camera: &ViewCameraState,
+    aspect: f32,
+) {
+    pan_anchor_on_slice(
+        pose,
+        &mut anchor.pos,
+        active_depth,
+        dir,
+        camera.zoom_cells,
+        aspect,
+    );
+}
+
+/// Effective look-at UV on the active slice (includes MMB drag offset).
+#[must_use]
+pub fn orbit_look_at_uv(
+    pose: ViewPose,
+    anchor: &OrbitAnchor,
+    mmb: &MmbPanState,
+) -> (f32, f32) {
+    if mmb.dragging {
+        (
+            mmb.anchor_uv_start.0 + mmb.uv_offset.0,
+            mmb.anchor_uv_start.1 + mmb.uv_offset.1,
+        )
+    } else {
+        cell_to_uv_f(pose, anchor.pos)
+    }
+}
+
+/// Apply a fractional UV pan delta during MMB drag.
+pub fn apply_mmb_uv_delta(mmb: &mut MmbPanState, du: f32, dv: f32) {
+    mmb.uv_offset.0 += du;
+    mmb.uv_offset.1 += dv;
+}
+
+/// Snap orbit anchor to the viewport center cell after MMB release.
+pub fn finish_mmb_pan(
+    anchor: &mut OrbitAnchor,
+    mmb: &mut MmbPanState,
+    pose: ViewPose,
+    active_depth: u16,
+) {
+    if !mmb.dragging {
+        return;
+    }
+    let u = mmb.anchor_uv_start.0 + mmb.uv_offset.0;
+    let v = mmb.anchor_uv_start.1 + mmb.uv_offset.1;
+    anchor.pos = cell_at_uv_depth(pose, u, v, active_depth);
+    set_orbit_anchor(anchor, anchor.pos);
+    *mmb = MmbPanState::default();
+}
+
 #[must_use]
 pub fn slice_depth(pose: ViewPose, selection: &SelectedCell) -> u16 {
     pose.slice_depth(selection.pos)
+}
+
+/// Infer screen direction from a UV delta (for auto-pan after drag selection).
+#[must_use]
+pub fn screen_dir_from_uv_delta(pose: ViewPose, du: f32, dv: f32) -> Option<ScreenDir> {
+    if du.abs() < f32::EPSILON && dv.abs() < f32::EPSILON {
+        return None;
+    }
+    let dirs = [
+        (ScreenDir::Up, pan_uv_delta(pose, ScreenDir::Up, 1.0)),
+        (ScreenDir::Down, pan_uv_delta(pose, ScreenDir::Down, 1.0)),
+        (ScreenDir::Left, pan_uv_delta(pose, ScreenDir::Left, 1.0)),
+        (ScreenDir::Right, pan_uv_delta(pose, ScreenDir::Right, 1.0)),
+    ];
+    let mut best = None;
+    let mut best_dot = f32::NEG_INFINITY;
+    for (dir, (pdu, pdv)) in dirs {
+        let dot = du * pdu + dv * pdv;
+        if dot > best_dot {
+            best_dot = dot;
+            best = Some(dir);
+        }
+    }
+    best
 }
 
 /// Pick a random non-empty cell from `candidates`, or world center.
@@ -106,5 +228,17 @@ mod tests {
         let sim = Simulation::new();
         let picked = random_selection(&[WorldPos::new(1, 2, 3)], &sim);
         assert_eq!(picked, FALLBACK_SELECTION);
+    }
+
+    #[test]
+    fn recenter_on_selection_sets_anchor() {
+        let selection = SelectedCell {
+            pos: WorldPos::new(10, 20, 30),
+        };
+        let mut anchor = OrbitAnchor {
+            pos: WorldPos::new(1, 2, 3),
+        };
+        recenter_on_selection(&mut anchor, &selection);
+        assert_eq!(anchor.pos, selection.pos);
     }
 }

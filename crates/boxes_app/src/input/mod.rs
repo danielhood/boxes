@@ -4,10 +4,17 @@ mod pick;
 mod selection;
 mod tools;
 
-pub use pick::{pick_slice_cell, pick_surface_cell};
+pub use pick::{
+    cell_to_uv_f, cursor_delta_to_uv, pick_slice_cell, pick_surface_cell,
+    selection_in_viewport, world_from_uv_on_slice,
+};
 #[allow(unused_imports)]
 pub use pick::pick_surface_at_uv;
-pub use selection::{random_selection, set_selection, slice_depth, SelectedCell};
+pub use selection::{
+    apply_mmb_uv_delta, finish_mmb_pan, orbit_look_at_uv, pan_orbit_anchor, random_selection,
+    recenter_on_selection, screen_dir_from_uv_delta, set_selection, slice_depth,
+    LastSelectionMove, MmbPanState, OrbitAnchor, SelectedCell,
+};
 pub use tools::{ActiveTool, PalettePreset, ToolState};
 pub use tools::{direction_label, palette_slot_label, reduce_mode_label};
 
@@ -26,15 +33,22 @@ impl Plugin for InputPlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<ToolState>()
             .init_resource::<SelectedCell>()
+            .init_resource::<OrbitAnchor>()
+            .init_resource::<LastSelectionMove>()
+            .init_resource::<MmbPanState>()
             .add_systems(
                 Update,
                 (
                     tool_keyboard_system,
                     keyboard_nav_system,
+                    pan_keyboard_system,
+                    recenter_system,
                     slice_keyboard_system,
                     zoom_keyboard_system,
                     wheel_input_system,
                     pointer_select_system,
+                    auto_pan_system,
+                    pan_pointer_system,
                     pointer_tool_system,
                 )
                     .chain(),
@@ -48,6 +62,25 @@ fn ctrl_held(keyboard: &ButtonInput<KeyCode>) -> bool {
 
 fn shift_held(keyboard: &ButtonInput<KeyCode>) -> bool {
     keyboard.pressed(KeyCode::ShiftLeft) || keyboard.pressed(KeyCode::ShiftRight)
+}
+
+fn viewport_aspect(window: &Window) -> f32 {
+    let h = window.height().max(1.0);
+    window.width() / h
+}
+
+fn arrow_screen_dir(keyboard: &ButtonInput<KeyCode>) -> Option<ScreenDir> {
+    if keyboard.just_pressed(KeyCode::ArrowUp) {
+        Some(ScreenDir::Up)
+    } else if keyboard.just_pressed(KeyCode::ArrowDown) {
+        Some(ScreenDir::Down)
+    } else if keyboard.just_pressed(KeyCode::ArrowLeft) {
+        Some(ScreenDir::Left)
+    } else if keyboard.just_pressed(KeyCode::ArrowRight) {
+        Some(ScreenDir::Right)
+    } else {
+        None
+    }
 }
 
 fn cursor_ray<'a>(
@@ -71,7 +104,7 @@ fn tool_keyboard_system(keyboard: Res<ButtonInput<KeyCode>>, mut tools: ResMut<T
         tools.active = ActiveTool::Inspect;
     }
 
-    if shift_held(&keyboard) {
+    if shift_held(&keyboard) && !ctrl_held(&keyboard) {
         let slot = if keyboard.just_pressed(KeyCode::Digit1) {
             Some(0)
         } else if keyboard.just_pressed(KeyCode::Digit2) {
@@ -104,25 +137,60 @@ fn keyboard_nav_system(
     keyboard: Res<ButtonInput<KeyCode>>,
     active: Res<ActiveView>,
     mut selection: ResMut<SelectedCell>,
+    mut last_move: ResMut<LastSelectionMove>,
 ) {
-    if ctrl_held(&keyboard) {
+    if ctrl_held(&keyboard) || shift_held(&keyboard) {
         return;
     }
 
-    let dir = if keyboard.just_pressed(KeyCode::ArrowUp) {
-        ScreenDir::Up
-    } else if keyboard.just_pressed(KeyCode::ArrowDown) {
-        ScreenDir::Down
-    } else if keyboard.just_pressed(KeyCode::ArrowLeft) {
-        ScreenDir::Left
-    } else if keyboard.just_pressed(KeyCode::ArrowRight) {
-        ScreenDir::Right
-    } else {
+    let Some(dir) = arrow_screen_dir(&keyboard) else {
         return;
     };
 
     let next = active.pose.nudge_screen(selection.pos, dir);
     set_selection(&mut selection, next);
+    last_move.dir = Some(dir);
+}
+
+fn pan_keyboard_system(
+    keyboard: Res<ButtonInput<KeyCode>>,
+    windows: Query<&Window, With<PrimaryWindow>>,
+    active: Res<ActiveView>,
+    selection: Res<SelectedCell>,
+    mut anchor: ResMut<OrbitAnchor>,
+    camera: Res<ViewCameraState>,
+) {
+    if !shift_held(&keyboard) || ctrl_held(&keyboard) {
+        return;
+    }
+
+    let Some(dir) = arrow_screen_dir(&keyboard) else {
+        return;
+    };
+
+    let Ok(window) = windows.single() else {
+        return;
+    };
+
+    let depth = slice_depth(active.pose, &selection);
+    pan_orbit_anchor(
+        active.pose,
+        &mut anchor,
+        depth,
+        dir,
+        &camera,
+        viewport_aspect(window),
+    );
+}
+
+fn recenter_system(
+    keyboard: Res<ButtonInput<KeyCode>>,
+    selection: Res<SelectedCell>,
+    mut anchor: ResMut<OrbitAnchor>,
+) {
+    if keyboard.just_pressed(KeyCode::KeyC) {
+        recenter_on_selection(&mut anchor, &selection);
+    }
 }
 
 fn slice_depth_delta(keyboard: &ButtonInput<KeyCode>) -> Option<i16> {
@@ -196,10 +264,13 @@ fn pointer_select_system(
     camera_entity: Res<GridCameraEntity>,
     camera_query: Query<(&Camera, &GlobalTransform), With<GridCamera>>,
     mut selection: ResMut<SelectedCell>,
+    mut last_move: ResMut<LastSelectionMove>,
+    mut last_uv: Local<Option<(f32, f32)>>,
 ) {
     let select_held = mouse.pressed(MouseButton::Left);
     let select_pressed = mouse.just_pressed(MouseButton::Left);
     if !select_held && !select_pressed {
+        *last_uv = None;
         return;
     }
 
@@ -221,8 +292,99 @@ fn pointer_select_system(
     };
 
     if select_pressed || (select_held && selection.pos != pos) {
+        let prev_uv = last_uv.or_else(|| Some(cell_to_uv_f(active.pose, selection.pos)));
         set_selection(&mut selection, pos);
+        if let Some((pu, pv)) = prev_uv {
+            let (nu, nv) = cell_to_uv_f(active.pose, pos);
+            last_move.dir = screen_dir_from_uv_delta(active.pose, nu - pu, nv - pv);
+        }
+        *last_uv = Some(cell_to_uv_f(active.pose, pos));
     }
+}
+
+fn auto_pan_system(
+    windows: Query<&Window, With<PrimaryWindow>>,
+    active: Res<ActiveView>,
+    selection: Res<SelectedCell>,
+    mut anchor: ResMut<OrbitAnchor>,
+    camera: Res<ViewCameraState>,
+    last_move: Res<LastSelectionMove>,
+) {
+    if !selection.is_changed() {
+        return;
+    }
+
+    let Ok(window) = windows.single() else {
+        return;
+    };
+
+    let pose = active.pose;
+    let aspect = viewport_aspect(window);
+    let anchor_uv = orbit_look_at_uv(pose, &anchor, &MmbPanState::default());
+
+    if selection_in_viewport(pose, selection.pos, anchor_uv, camera.zoom_cells, aspect) {
+        return;
+    }
+
+    let Some(dir) = last_move.dir else {
+        return;
+    };
+
+    let depth = slice_depth(pose, &selection);
+    pan_orbit_anchor(pose, &mut anchor, depth, dir, &camera, aspect);
+}
+
+#[allow(clippy::too_many_arguments)]
+fn pan_pointer_system(
+    mouse: Res<ButtonInput<MouseButton>>,
+    windows: Query<&Window, With<PrimaryWindow>>,
+    active: Res<ActiveView>,
+    selection: Res<SelectedCell>,
+    mut anchor: ResMut<OrbitAnchor>,
+    mut mmb: ResMut<MmbPanState>,
+    camera: Res<ViewCameraState>,
+    mut last_cursor: Local<Option<Vec2>>,
+) {
+    if mouse.just_pressed(MouseButton::Middle) {
+        mmb.dragging = true;
+        mmb.anchor_uv_start = cell_to_uv_f(active.pose, anchor.pos);
+        mmb.uv_offset = (0.0, 0.0);
+        if let Ok(window) = windows.single() {
+            *last_cursor = window.cursor_position();
+        }
+        return;
+    }
+
+    if mouse.just_released(MouseButton::Middle) {
+        let depth = slice_depth(active.pose, &selection);
+        finish_mmb_pan(&mut anchor, &mut mmb, active.pose, depth);
+        *last_cursor = None;
+        return;
+    }
+
+    if !mouse.pressed(MouseButton::Middle) || !mmb.dragging {
+        return;
+    }
+
+    let Ok(window) = windows.single() else {
+        return;
+    };
+
+    let Some(cursor) = window.cursor_position() else {
+        return;
+    };
+
+    if let Some(prev) = *last_cursor {
+        let delta = cursor - prev;
+        let (du, dv) = cursor_delta_to_uv(
+            active.pose,
+            delta,
+            camera.zoom_cells,
+            window.height(),
+        );
+        apply_mmb_uv_delta(&mut mmb, du, dv);
+    }
+    *last_cursor = Some(cursor);
 }
 
 #[allow(clippy::too_many_arguments)]

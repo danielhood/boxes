@@ -7,7 +7,7 @@ mod ui;
 
 use bevy::prelude::*;
 
-pub use input::{ActiveTool, InputPlugin, PalettePreset, SelectedCell, ToolState};
+pub use input::{ActiveTool, InputPlugin, OrbitAnchor, PalettePreset, SelectedCell, ToolState};
 pub use render::{ActiveView, GridRenderPlugin, OrthoView, ViewCameraState, ViewPose};
 pub use sim_bridge::{GridSimulation, SimPlayback, SimSpeed, SimTickStats};
 pub use ui::{FactoryUiPlugin, HelpUiPlugin};

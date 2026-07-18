@@ -400,17 +400,22 @@ pub fn setup_cameras(mut commands: Commands, mut active: ResMut<ActiveView>) {
     active.snap_top();
 }
 
+#[allow(clippy::too_many_arguments)]
 pub fn apply_camera_framing(
     active: Res<ActiveView>,
     camera_state: Res<ViewCameraState>,
+    anchor: Res<crate::input::OrbitAnchor>,
+    mmb: Res<crate::input::MmbPanState>,
     selection: Res<crate::input::SelectedCell>,
     camera_entity: Res<GridCameraEntity>,
     mut transforms: Query<&mut Transform, With<GridCamera>>,
     mut projections: Query<&mut Projection, With<GridCamera>>,
 ) {
-    let target = cell_to_world(selection.pos);
-    let distance = WORLD_SIZE as f32 * 1.2;
     let pose = active.pose;
+    let depth = pose.slice_depth(selection.pos);
+    let (u, v) = crate::input::orbit_look_at_uv(pose, &anchor, &mmb);
+    let target = crate::input::world_from_uv_on_slice(pose, u, v, depth);
+    let distance = WORLD_SIZE as f32 * 1.2;
 
     if let Ok(mut transform) = transforms.get_mut(camera_entity.0) {
         *transform = Transform::from_translation(target + pose.camera_offset(distance))
@@ -448,13 +453,17 @@ pub fn view_rotate_system(
     keyboard: Res<ButtonInput<KeyCode>>,
     mut active: ResMut<ActiveView>,
 ) {
-    if !ctrl_held(&keyboard) {
+    if !ctrl_held(&keyboard) || shift_held(&keyboard) {
         return;
     }
     let Some(dir) = screen_dir_from_arrow(&keyboard) else {
         return;
     };
     active.rotate(dir);
+}
+
+fn shift_held(keyboard: &ButtonInput<KeyCode>) -> bool {
+    keyboard.pressed(KeyCode::ShiftLeft) || keyboard.pressed(KeyCode::ShiftRight)
 }
 
 pub fn snap_top_view_system(keyboard: Res<ButtonInput<KeyCode>>, mut active: ResMut<ActiveView>) {
@@ -628,5 +637,18 @@ mod tests {
         let pos = WorldPos::new(10, 10, 10);
         let next = pose.nudge_depth(pos, pose.depth_step_delta(1));
         assert_eq!(next, WorldPos::new(10, 11, 10));
+    }
+
+    #[test]
+    fn orbit_anchor_look_at_uses_anchor_not_selection() {
+        use crate::input::{cell_to_uv_f, world_from_uv_on_slice};
+
+        let pose = ViewPose::top_default();
+        let anchor = WorldPos::new(100, 50, 100);
+        let selection = WorldPos::new(120, 50, 120);
+        let depth = pose.slice_depth(selection);
+        let (u, v) = cell_to_uv_f(pose, anchor);
+        let target = world_from_uv_on_slice(pose, u, v, depth);
+        assert_ne!(target, cell_to_world(selection));
     }
 }

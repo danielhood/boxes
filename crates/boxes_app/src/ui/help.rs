@@ -27,12 +27,17 @@ impl Plugin for HelpUiPlugin {
 
 const HELP_TEXT: &str = "\
 Selection & navigation
-  Arrow keys     Move selected cell on face
+  Arrow keys     Move selected cell (view stays)
   [ / ]          Step depth slice (selection)
   Mouse wheel    Step depth slice
-  LMB            Select cell (drag to track)
+  LMB            Select cell on active slice (drag to track)
   Ctrl+arrows    Rotate to adjacent face
   T              Snap to top view
+
+Pan & recenter
+  Shift+arrows   Pan view (¼ viewport per press)
+  MMB drag       Pan view (release snaps anchor)
+  C              Center view on selected cell
 
 Views & zoom
   Ctrl+wheel     Zoom in/out (8–64 cells)

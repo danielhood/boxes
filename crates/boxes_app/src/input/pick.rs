@@ -3,7 +3,7 @@
 use bevy::prelude::*;
 use boxes_sim::{Simulation, WorldPos, WORLD_SIZE};
 
-use crate::render::{visible_surface, ViewPose, OrthoView, WORLD_CENTER};
+use crate::render::{cell_to_world, visible_surface, ViewPose, OrthoView, WORLD_CENTER};
 
 /// Axis perpendicular to an orthographic face (depth into the screen).
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -127,6 +127,105 @@ pub fn pick_slice_cell(
     let (u, v) = world_hit_to_uv(pose, hit)?;
     let pos = uv_depth_to_cell(pose, u, v, depth);
     pos.is_in_bounds().then_some(pos)
+}
+
+/// View-plane UV coordinates for a cell (fractional).
+#[must_use]
+pub fn cell_to_uv_f(pose: ViewPose, pos: WorldPos) -> (f32, f32) {
+    let world = cell_to_world(pos);
+    (
+        world.dot(pose.u_axis) + WORLD_CENTER,
+        world.dot(pose.v_axis) + WORLD_CENTER,
+    )
+}
+
+/// World-space point on the active slice at fractional UV.
+#[must_use]
+pub fn world_from_uv_on_slice(pose: ViewPose, u: f32, v: f32, depth: u16) -> Vec3 {
+    let depth_axis = pose.face().depth_world_axis();
+    pose.u_axis * (u - WORLD_CENTER)
+        + pose.v_axis * (v - WORLD_CENTER)
+        + depth_axis * (depth as f32 - WORLD_CENTER)
+}
+
+/// Snap fractional UV to the nearest cell on `depth`.
+#[must_use]
+pub fn cell_at_uv_depth(pose: ViewPose, u: f32, v: f32, depth: u16) -> WorldPos {
+    let max = WORLD_SIZE as f32 - 1.0;
+    let u = u.clamp(0.0, max).round() as u16;
+    let v = v.clamp(0.0, max).round() as u16;
+    uv_depth_to_cell(pose, u, v, depth)
+}
+
+/// Half-width and half-height of the visible viewport in cell units.
+#[must_use]
+pub fn viewport_half_extents(zoom_cells: f32, aspect: f32) -> (f32, f32) {
+    let half_h = zoom_cells / 2.0;
+    (half_h * aspect, half_h)
+}
+
+/// True when `selection` lies within the viewport centered on `anchor`.
+#[must_use]
+pub fn selection_in_viewport(
+    pose: ViewPose,
+    selection: WorldPos,
+    anchor_uv: (f32, f32),
+    zoom_cells: f32,
+    aspect: f32,
+) -> bool {
+    let (sel_u, sel_v) = cell_to_uv_f(pose, selection);
+    let (half_w, half_h) = viewport_half_extents(zoom_cells, aspect);
+    let du = (sel_u - anchor_uv.0).abs();
+    let dv = (sel_v - anchor_uv.1).abs();
+    du <= half_w && dv <= half_h
+}
+
+/// UV delta for panning one screen direction by `amount` cells.
+#[must_use]
+pub fn pan_uv_delta(pose: ViewPose, dir: crate::render::ScreenDir, amount: f32) -> (f32, f32) {
+    use crate::render::ScreenDir;
+    let world = match dir {
+        ScreenDir::Up => pose.up * amount,
+        ScreenDir::Down => -pose.up * amount,
+        ScreenDir::Left => -pose.screen_right() * amount,
+        ScreenDir::Right => pose.screen_right() * amount,
+    };
+    (world.dot(pose.u_axis), world.dot(pose.v_axis))
+}
+
+/// Map cursor pixel movement to UV delta on the active slice.
+#[must_use]
+pub fn cursor_delta_to_uv(
+    pose: ViewPose,
+    pixel_delta: Vec2,
+    zoom_cells: f32,
+    viewport_height: f32,
+) -> (f32, f32) {
+    let scale = zoom_cells / viewport_height;
+    let world =
+        -pose.screen_right() * pixel_delta.x * scale + pose.up * pixel_delta.y * scale;
+    (world.dot(pose.u_axis), world.dot(pose.v_axis))
+}
+
+/// Pan an anchor on the active slice by one quarter viewport.
+pub fn pan_anchor_on_slice(
+    pose: ViewPose,
+    anchor: &mut WorldPos,
+    active_depth: u16,
+    dir: crate::render::ScreenDir,
+    zoom_cells: f32,
+    aspect: f32,
+) {
+    let quarter = zoom_cells / 4.0;
+    let (du, dv) = pan_uv_delta(pose, dir, quarter);
+    let (mut u, mut v) = cell_to_uv_f(pose, *anchor);
+    u += du;
+    v += dv;
+    let (half_w, half_h) = viewport_half_extents(zoom_cells, aspect);
+    let max = WORLD_SIZE as f32 - 1.0;
+    u = u.clamp(half_w, max - half_w);
+    v = v.clamp(half_h, max - half_h);
+    *anchor = cell_at_uv_depth(pose, u, v, active_depth);
 }
 
 #[cfg(test)]
@@ -325,5 +424,45 @@ mod tests {
         )
         .unwrap();
         assert_vec3_close(hit, Vec3::new(0.0, 3.0, 0.0));
+    }
+
+    #[test]
+    fn cell_to_uv_f_round_trip() {
+        let pos = WorldPos::new(42, 17, 99);
+        let pose = OrthoView::Top.default_pose();
+        let (u, v) = cell_to_uv_f(pose, pos);
+        assert!((u - 42.0).abs() < 0.01);
+        assert!((v - 99.0).abs() < 0.01);
+    }
+
+    #[test]
+    fn selection_in_viewport_at_center() {
+        let pose = OrthoView::Top.default_pose();
+        let pos = WorldPos::new(100, 50, 100);
+        let uv = cell_to_uv_f(pose, pos);
+        assert!(selection_in_viewport(pose, pos, uv, 32.0, 1.0));
+    }
+
+    #[test]
+    fn selection_outside_viewport() {
+        let pose = OrthoView::Top.default_pose();
+        let anchor = WorldPos::new(100, 50, 100);
+        let anchor_uv = cell_to_uv_f(pose, anchor);
+        let far = WorldPos::new(200, 50, 200);
+        assert!(!selection_in_viewport(pose, far, anchor_uv, 32.0, 1.0));
+    }
+
+    #[test]
+    fn pan_uv_delta_quarter_zoom() {
+        let pose = OrthoView::Top.default_pose();
+        let (_, dv) = pan_uv_delta(pose, crate::render::ScreenDir::Up, 8.0);
+        assert!((dv + 8.0).abs() < 0.01);
+    }
+
+    #[test]
+    fn cell_at_uv_depth_snaps() {
+        let pose = OrthoView::Top.default_pose();
+        let pos = cell_at_uv_depth(pose, 10.4, 20.6, 7);
+        assert_eq!(pos, WorldPos::new(10, 7, 21));
     }
 }
