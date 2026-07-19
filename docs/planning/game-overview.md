@@ -9,18 +9,40 @@ The game takes place in a finite, three-dimensional biological environment compo
 
 The player is an entity external to this environment. Rather than controlling an avatar, the player directly manipulates any visible part of the world. The player begins with limited knowledge and a small set of abilities, then unlocks new capabilities by exploring and interacting with the environment.
 
-At the start of a game, the player can see and use the resources within a small spherical region around a starting point. The player may navigate the view throughout the pre-generated world, but cells outside the current visibility network appear as unknown gray cells and reveal no information.
+At the start of a game, the player can see and use the resources within a small spherical region around a randomly chosen starting point near the center of the world. The player may navigate freely throughout the entire world, but cells outside the current visibility range of controlled organisms appear as unknown gray cells and reveal no information.
+
+## Objectives and Failure Conditions
+
+### Primary objective
+
+The player's primary objective is to expand their controlled organisms across the world until they reach the edges of the world boundary. Along the way, the player discovers and unlocks **Knowledge**—the abilities required to grow, adapt, and survive. Completing the game requires both reaching the world boundary and unlocking all Knowledge available in that world.
+
+### Threats and pressure
+
+The player's organisms are continuously threatened by harmful resources and independent organisms. Survival depends on managing growth, resource production, and interactions with the environment while pushing outward into increasingly dangerous territory.
+
+### Failure conditions
+
+The player loses the game when they have no controlled organisms remaining. A player loses control of an organism when that organism becomes independent or dies.
+
+Resource depletion creates additional pressure. If the player runs out of resources, they can no longer seed new organisms. Without the ability to establish new controlled organisms, the player may eventually lose their last remaining organism and fail the game.
+
+### Progression and persistence
+
+Progression applies only within a single generated world. XP, Knowledge, and other player advancement are stored as part of the world state. Starting a new game creates a new world with no carried-over progression from previous games.
+
+The game is single-player only. There is one player per world, with no multiplayer or shared-world support.
 
 ## Core Concepts
 
 - **Vita:** Ambient energy that flows throughout the world. Organisms consume Vita to power growth and other biological processes.
 - **Cell:** The smallest spatial unit in the game, represented by a three-dimensional cube. A cell may contain ooze, a resource, or part of an organism.
 - **Resource:** Raw or processed material that organisms can consume, store, produce, or transform.
-- **Organism:** A contiguous, multicellular structure that occupies an irregular three-dimensional shape. Organisms may be controlled by the player or act independently.
-- **Experience (XP):** A measure of the player's activity and progress. Interacting with the world and growing controlled organisms grants XP, which determines the player's XP level.
-- **Knowledge:** The collection of abilities available to the player. Knowledge is acquired through discovery and by reaching new XP levels, making it the primary progression system.
+- **Organism:** A contiguous group of body cells that share one body type. Organisms may be controlled by the player or act independently.
+- **Experience (XP):** A measure of the player's activity and progress within the current world. Interacting with the world and growing controlled organisms grants XP, which determines the player's XP level.
+- **Knowledge:** The collection of abilities available to the player in the current world. Knowledge is acquired through discovery and by reaching new XP levels, making it the primary progression system. Unlocking all Knowledge is required to complete the game. Both XP and Knowledge are stored with the world state and do not carry over to a new game.
 - **Time:** The simulation advances continuously through discrete ticks. Organisms age over time and eventually die.
-- **Visibility:** The player can identify only cells within the visibility range of controlled organisms. All other cells are displayed as **Unknown**.
+- **Visibility:** The player can identify only cells within the visibility range of controlled organisms. That range is measured from the outer extent of each organism and varies by type and abilities. Cells outside this range, and cells that later fall outside it, are displayed as **Unknown**.
 
 ## Cells
 
@@ -28,23 +50,25 @@ Nothing in the world changes position. Organisms, resources, and individual cell
 
 There are no moving projectiles. Effects that might otherwise be represented by projectiles must instead propagate through local cell interactions, bursts of Vita, or fields of positive or negative influence.
 
-Each cell has a type representing ooze, a resource, or part of an organism. Ooze is effectively inert, empty space. Contiguous body cells belonging to the same organism form one organism; disconnected groups form separate organisms. Transformations can connect or separate these groups, allowing organisms to merge or split.
+Each cell has a type representing ooze, a resource, or part of an organism. Ooze is effectively inert, empty space. Organism identity is determined by connectivity: all contiguous body cells of the same body type form one organism. If two body cells of the same type touch, they belong to the same organism. Disconnected groups of the same body type are separate organisms. Transformations can connect or separate these groups, allowing organisms to merge or split.
 
 ## Organisms
 
-Organisms are contiguous groups of body cells arranged in irregular three-dimensional shapes. Each organism type has a distinct set of properties, behaviors, and abilities.
+Organisms are contiguous groups of body cells that share a single body type and form irregular three-dimensional shapes. Each organism type has a distinct set of properties, behaviors, and abilities.
 
-Organisms reveal nearby cells, allowing the player to discover more of the world. Their visibility ranges may vary by type.
+An organism contains only one body type. Body cells that touch an organism of a different body type belong to a separate organism, even if they are adjacent.
 
-Some organisms are player-controlled, while others operate independently. Independent organisms may be harmful, neutral, or beneficial. Environmental influences may cause an organism to transition between controlled and independent states.
+Organisms reveal nearby cells, allowing the player to discover more of the world. Each organism type defines how far beyond its outer extent it reveals surrounding cells.
 
-The player can seed a new organism when the required resources and knowledge are available. The current interaction concept uses a right-click tool to transform an ooze cell into the selected organism type.
+Some organisms are player-controlled, while others operate independently. Independent organisms may be harmful, neutral, or beneficial. Environmental influences may cause an organism to transition between controlled and independent states. When a controlled organism becomes independent, the player loses control of it.
+
+The player can seed a new organism when the required resources and knowledge are available. Seeding requires sufficient resources; if the player has none, they cannot establish new organisms. The current interaction concept uses a right-click tool to transform an ooze cell into the selected organism type.
 
 Nearby organisms interact through local rules. An interaction may benefit, harm, or have no effect on either organism, depending on the organisms' types and properties.
 
 ## Resources
 
-Resources occur naturally in the world and may also be produced by organisms. Depending on the consuming organism, a resource may be beneficial, harmful, or inert.
+Resources occur naturally in the world and may also be produced by organisms. Depending on the consuming organism, a resource may be beneficial, harmful, or inert. Harmful resources are a primary threat to the player's organisms.
 
 Each resource has properties that determine how it can be consumed and transformed. Transformations generally combine one or more resources into a more advanced resource and consume Vita over time.
 
@@ -68,48 +92,60 @@ The organism catalog will define each available organism type, including its pro
 
 ## World Generation
 
-The complete world is generated when a new game begins, although only a small region is initially visible. The world is finite and will likely be cubic for implementation simplicity.
+The complete world is generated when a new game begins, although only a small region is initially visible. Each new game creates a fresh world with its own progression state.
+
+### World scale
+
+The world is a cube. Its extent along each axis is defined in code (currently `WORLD_SIZE` in `boxes_sim`), not as a design-time parameter in this document.
+
+### Starting point
+
+The player's starting point is chosen at random within a fixed radius of the world center. World generation begins from that point and expands outward, placing resources and organisms so that a viable progression path exists from the start.
+
+### Navigation
+
+The player can navigate freely throughout the entire world, including through unknown cells. Navigation is not limited to visible or previously discovered regions.
+
+### Visibility
+
+A cell is visible when it lies within a certain distance of the outer extent of a controlled organism. That distance varies by organism type and abilities. Cells beyond this range render as **Unknown** and provide no information to the player.
+
+Player-controlled organisms are always visible, along with all cells within their visibility range. A controlled organism cannot exist in an unknown or inactive off-screen state.
+
+Visibility is not permanent. If a cell later falls outside the visibility range of all controlled organisms—for example, because organisms die, shrink, or lose visibility range—the cell becomes **Unknown** again. The player does not retain a remembered view of its last known state.
+
+### Disconnected visible regions
+
+Visible regions may become separated when controlled organisms die or visibility is lost between them. The player can still interact with each disconnected visible region, because navigation across unknown cells is unrestricted.
+
+### World boundaries
+
+World boundaries are impassable voids. Cells cannot exist or grow beyond the cube boundary.
 
 Visibility expands as the player's organisms grow and spread. If controlled organisms die, previously connected visible regions may become separated by unknown space.
 
-Organisms outside visible areas are intended to remain inactive until they are discovered or come within an awareness range of the player's visible territory.
+Independent organisms outside visible areas are intended to remain inactive until they are discovered or come within an awareness range of the player's visible territory.
 
-Resource and organism distribution is part of the progression model. More advanced or dangerous content should generally appear farther from the starting point. This progression model may require placing the player near the center of the world rather than at a fully random location.
+Resource and organism distribution is part of the progression model. More advanced or dangerous content is placed farther from the starting point as generation expands outward from the player's initial location.
 
 ## Open Questions
 
 ### Player Goals and Progression
 
-- What is the player's primary objective, and what constitutes victory or completion?
-- What threats, failure states, or lose conditions create pressure on the player?
 - Exactly which actions grant XP, how much XP do they grant, and can repeated low-risk actions be exploited?
 - What is unlocked through XP levels versus discovery? Can knowledge be lost, hidden, or acquired in multiple ways?
-- Does progression apply only within one generated world, or does anything persist between games?
 - How are advanced resources and organisms introduced so that discovery feels intentional rather than arbitrary?
-
-### World Scale, Navigation, and Visibility
-
-- What are the world's dimensions, and is its shape definitely a cube?
-- Is the starting point random, fixed near the center, or selected under constraints that guarantee a viable progression path?
-- Can the camera navigate freely through unknown space, or only through visible and previously discovered regions?
-- Is visibility based on distance from every controlled organism, a connected network, line of sight, or some combination of these?
-- Does a cell become unknown again when visibility is lost, or does the player retain a remembered view of its last known state?
-- If visible regions become disconnected, can the player interact with every region equally, or does interaction require a connection to a primary organism or network?
-- Are world boundaries inert walls, impassable voids, wraparound edges, or something else?
 
 ### Simulation Outside Visible Areas
 
 - Time is described as continuous and organisms age, but organisms in non-visible areas are described as inactive. Do hidden organisms age, consume resources, produce resources, fight, and die?
 - If hidden areas are paused, how are they reconciled when discovered? Do they resume from their original generated state or simulate elapsed time in a batch?
-- Does “inactive” apply only to independent organisms, or also to player-controlled organisms that are temporarily outside visibility?
 - What causes an undiscovered organism to become aware of the player's territory, and can that occur before the player can see it?
 - How can off-screen activation remain deterministic and avoid revealing information indirectly?
 
 ### Cells, Organisms, and Identity
 
 - Does every cell have both a type and mutable state, and which data belongs to the cell versus the organism as a whole?
-- How is organism identity represented? If two organisms of the same body type touch, do they automatically merge?
-- Can one organism contain multiple body-cell types, or must all contiguous cells share one organism type?
 - When an organism splits, how are stored resources, age, health, control, and other organism-level properties divided?
 - What happens to an organism's cells when it dies: immediate conversion to ooze, gradual decay, or transformation into resources?
 - Which local neighborhood rules are used—six face neighbors, all 26 surrounding cells, or a type-specific range?
