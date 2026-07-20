@@ -35,7 +35,7 @@ The game is single-player only. There is one player per world, with no multiplay
 
 ## Core Concepts
 
-- **Vita:** Ambient energy that flows throughout the world. Organisms consume Vita to power growth and other biological processes.
+- **Vita:** An ambient energy concept that permeates the world. Vita is not a quantifiable resource—the world assumes an infinite supply is always available everywhere. Organisms draw on Vita to power biological processes at a rate governed by their **Vita use efficiency**.
 - **Cell:** The smallest spatial unit in the game, represented by a three-dimensional cube. A cell may contain ooze, a resource, or part of an organism.
 - **Resource:** Raw or processed material that organisms can consume, store, produce, or transform.
 - **Organism:** A contiguous group of body cells that share one body type. Organisms may be controlled by the player or act independently.
@@ -48,7 +48,7 @@ The game is single-player only. There is one player per world, with no multiplay
 
 Nothing in the world changes position. Organisms, resources, and individual cells remain fixed in place. Instead, cells change type or state in response to nearby cells. Growth, consumption, production, decay, organism splitting, and organism merging all occur through cell transformations.
 
-There are no moving projectiles. Effects that might otherwise be represented by projectiles must instead propagate through local cell interactions, bursts of Vita, or fields of positive or negative influence.
+There are no moving projectiles. Effects that might otherwise be represented by projectiles must instead propagate through local cell interactions or fields of positive or negative influence.
 
 Each cell has a type representing ooze, a resource, or part of an organism. Ooze is effectively inert, empty space. Organism identity is determined by connectivity: all contiguous body cells of the same body type form one organism. If two body cells of the same type touch, they belong to the same organism. Disconnected groups of the same body type are separate organisms. Transformations can connect or separate these groups, allowing organisms to merge or split.
 
@@ -72,7 +72,7 @@ Nearby organisms interact through local rules. An interaction may benefit, harm,
 
 Resources occur naturally in the world and may also be produced by organisms. Depending on the consuming organism, a resource may be beneficial, harmful, or inert. Harmful resources are a primary threat to the player's organisms.
 
-Each resource has properties that determine how it can be consumed and transformed. Transformations generally combine one or more resources into a more advanced resource and consume Vita over time.
+Each resource has properties that determine how it can be consumed and transformed. Transformations generally combine one or more resources into a more advanced resource and draw on Vita over time at a rate governed by the organism's Vita use efficiency.
 
 A resource cell contains a finite quantity of one resource. When that quantity is exhausted, the cell becomes ooze. Some organisms naturally produce or store resources within their body cells.
 
@@ -80,9 +80,13 @@ The player can use only resources that are currently visible. Most raw resources
 
 ## Vita
 
-Vita is ambient energy distributed throughout the world. Organisms draw on it directly to power processes over time.
+Vita is an ambient energy concept, not a quantifiable resource. The world assumes an infinite supply is always available everywhere—in active and inactive regions alike. Consumption in one area is immediately replenished; the simulation does not model Vita flow, localized Vita quantities, or depletion.
 
-Future organism or resource types may alter local Vita availability by concentrating or suppressing it. Specialized organisms may also store Vita and release it in larger bursts—for example, to charge a defensive mechanism.
+Each organism has a **Vita use efficiency** property that determines how effectively it draws on ambient Vita and therefore the rate of its Vita-dependent processes. Other organisms and resources, within a defined range, can raise or lower this efficiency for nearby organisms. These effects are interpreted as locally increasing Vita concentration or suppressing Vita availability, without simulating actual Vita movement or storage.
+
+### Environmental systems (future)
+
+Temperature, ooze density, and similar environmental properties are parked as future concepts. Whether and how they enter the simulation will be decided if and when they are brought into the game.
 
 ## Resource Types
 
@@ -90,7 +94,7 @@ The resource catalog will define each available resource, including its properti
 
 ## Organism Types
 
-The organism catalog will define each available organism type, including its properties, abilities, behavior, visibility range, activation range, resource requirements, and interactions with other organisms.
+The organism catalog will define each available organism type, including its properties, abilities, behavior, visibility range, activation range, Vita use efficiency, resource requirements, and interactions with other organisms.
 
 ## World Generation
 
@@ -174,16 +178,6 @@ Resource and organism distribution is part of the progression model. More advanc
 - What happens to stored resources when their organism splits, changes control, or dies?
 - Are resource effects intrinsic to the resource, specific to the consuming organism, or resolved by an explicit combination of both?
 
-### Vita and Environmental Systems
-
-- Is Vita initially uniform and unlimited, or does consuming it temporarily or permanently deplete local availability?
-- If Vita flows, what direction and rate govern that flow when nothing in the world moves?
-- How do Vita concentration and suppression interact with the claim that Vita is distributed evenly throughout the world?
-- Can Vita cross unknown or inactive regions, and is its simulation paused there?
-- Is stored Vita represented as cell state, a resource, or an organism-level value?
-- Are temperature, ooze density, or other environmental properties global fields, cell states, or emergent effects of nearby cells?
-- The possibility of “ooze currents” appears inconsistent with the no-movement rule. Would currents move material, propagate influence without movement, or be excluded?
-
 ### Biomes and World Generation
 
 - Should the world contain explicit biomes with authored properties, or should regional differences emerge entirely from cell composition?
@@ -200,4 +194,4 @@ Resource and organism distribution is part of the progression model. More advanc
 - How are positive, negative, and neutral interactions communicated to the player?
 - How long should growth, processing, aging, and death take in real time and in simulation ticks?
 - What prevents stable systems from becoming permanently self-sustaining or, conversely, collapsing without recoverable resources?
-- Which mechanics are essential to the core game, and which—such as Vita storage, environmental fields, and control transitions—should be deferred until later?
+- Which mechanics are essential to the core game, and which—such as environmental fields and control transitions—should be deferred until later?
