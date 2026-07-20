@@ -36,8 +36,8 @@ The game is single-player only. There is one player per world, with no multiplay
 ## Core Concepts
 
 - **Vita:** An ambient energy concept that permeates the world. Vita is not a quantifiable resource—the world assumes an infinite supply is always available everywhere. Organisms draw on Vita to power biological processes at a rate governed by their **Vita use efficiency**.
-- **Cell:** The smallest spatial unit in the game, represented by a three-dimensional cube. A cell may contain ooze, a resource, or part of an organism.
-- **Resource:** Raw or processed material that organisms can consume, store, produce, or transform.
+- **Cell:** The smallest spatial unit in the game, represented by a three-dimensional cube. Each cell is exactly one of: ooze, a single resource type, or an organism body cell.
+- **Resource:** A typed material stored in a resource cell as a quantity. Resources do not move; they are consumed or generated in place.
 - **Organism:** A contiguous group of body cells that share one body type. Organisms may be controlled by the player or act independently.
 - **Experience (XP):** A measure of the player's activity and progress within the current world. Interacting with the world and growing controlled organisms grants XP, which determines the player's XP level.
 - **Knowledge:** The collection of abilities available to the player in the current world. Knowledge is acquired through discovery and by reaching new XP levels, making it the primary progression system. Unlocking all Knowledge is required to complete the game. Both XP and Knowledge are stored with the world state and do not carry over to a new game.
@@ -50,7 +50,9 @@ Nothing in the world changes position. Organisms, resources, and individual cell
 
 There are no moving projectiles. Effects that might otherwise be represented by projectiles must instead propagate through local cell interactions or fields of positive or negative influence.
 
-Each cell has a type representing ooze, a resource, or part of an organism. Ooze is effectively inert, empty space. Organism identity is determined by connectivity: all contiguous body cells of the same body type form one organism. If two body cells of the same type touch, they belong to the same organism. Disconnected groups of the same body type are separate organisms. Transformations can connect or separate these groups, allowing organisms to merge or split.
+Each cell is exactly one of three kinds: **ooze**, a **resource** cell holding one resource type, or an **organism body** cell. A cell cannot combine types—for example, a resource cell cannot also be part of an organism. Ooze is effectively inert, empty space. Organism identity is determined by connectivity: all contiguous body cells of the same body type form one organism. If two body cells of the same type touch, they belong to the same organism. Disconnected groups of the same body type are separate organisms. Transformations can connect or separate these groups, allowing organisms to merge or split.
+
+Local adjacency for resource interaction uses **face neighbors** only—the six cells that share a face with a given cell. For player actions, a cell is **in contact** with a player-controlled organism when it is face-adjacent to at least one of that organism's body cells.
 
 ## Organisms
 
@@ -64,19 +66,49 @@ Some organisms are player-controlled, while others operate independently. Indepe
 
 Independent organisms outside the active simulation remain frozen until they activate. An inactive independent organism becomes active when an active player-controlled organism comes within its **activation range**. That range is defined by the inactive organism's attributes and may extend beyond the player-controlled organism's visibility range.
 
-The player can seed a new organism when the required resources and knowledge are available. Seeding requires sufficient resources; if the player has none, they cannot establish new organisms. The current interaction concept uses a right-click tool to transform an ooze cell into the selected organism type.
+The player can seed a new organism when the required resources and knowledge are available. Required resources must be in contact with a player-controlled organism. Seeding requires sufficient resources; if the player has none accessible this way, they cannot establish new organisms. The current interaction concept uses a right-click tool to transform an ooze cell into the selected organism type.
 
 Nearby organisms interact through local rules. An interaction may benefit, harm, or have no effect on either organism, depending on the organisms' types and properties.
 
 ## Resources
 
-Resources occur naturally in the world and may also be produced by organisms. Depending on the consuming organism, a resource may be beneficial, harmful, or inert. Harmful resources are a primary threat to the player's organisms.
+Resources occur naturally in the world and may also be produced by organisms. Depending on the consuming or touching organism, a resource may be beneficial, harmful, or inert. Harmful resources are a primary threat to the player's organisms.
 
-Each resource has properties that determine how it can be consumed and transformed. Transformations generally combine one or more resources into a more advanced resource and draw on Vita over time at a rate governed by the organism's Vita use efficiency.
+### Cell content and quantities
 
-A resource cell contains a finite quantity of one resource. When that quantity is exhausted, the cell becomes ooze. Some organisms naturally produce or store resources within their body cells.
+A resource cell holds exactly one resource type and tracks an **amount** of that resource. Amounts are initially represented as integers; some resource types or consumption patterns may later require real values. Resource quantities are stored on the resource cell itself, not on organisms.
 
-The player can use only resources that are currently visible. Most raw resources cannot be used directly and must first be processed by an organism. Processed resources are stored in one or more cells within that organism's body.
+When a resource cell is fully consumed, it immediately becomes an ooze cell.
+
+### Adjacency and access
+
+Resources do not move between cells. Consumption and generation change the amount in place, or convert a cell's type.
+
+For an organism to consume from or generate into a resource cell, that resource cell must be **face-adjacent** to at least one of the organism's body cells (sharing one of the six faces).
+
+A resource cell touched by only one face of an organism's body can be **shared**—multiple organisms may consume from or interact with it. For an organism to have **exclusive** access, all six faces of the resource cell must be adjacent to that organism's body cells.
+
+The player has access to any resource cell **in contact** with a player-controlled organism (face-adjacent to at least one of its body cells), whether or not that organism can process the resource. An organism that cannot process a resource can still surround it and block other organisms from reaching it.
+
+### Consumption and generation
+
+Resource consumption, generation, transformation, and combination are performed only by organisms.
+
+An organism consumes or generates a resource only if it has an ability that processes that resource type. Generation into a new resource cell converts an ooze cell, or an organism body cell other than the organism's last remaining body cell, into a resource cell of the generated type. An organism generates a resource cell only when no other resource cells of that type are available to it—that is, none are in contact with the organism.
+
+Transformations that combine resources into more advanced types are also performed by organisms, drawing on Vita over time at a rate governed by the organism's Vita use efficiency.
+
+### Player reallocation
+
+The player may transfer an amount of a resource from one resource cell to another, provided both cells are **in contact** with a player-controlled organism—that is, face-adjacent to at least one of its body cells. The player cannot create new resource amounts, convert cells to resource types, or transform or combine resources; those actions are reserved for organisms. The player cannot manipulate body cells of independent or hostile organisms. Player transfers are immediate; distance and time are not factors.
+
+Resource quantities are initially displayed only through the cell inspection window.
+
+### Organism changes and resource effects
+
+Changes to an organism—split, merge, change of control, death, and so on—do not alter the resource cells it touches. The quantity in each resource cell remains on that cell. After a split, one part of the organism may lose access to a resource if its body no longer face-adjacent to that cell.
+
+Resource effects are determined exclusively by the organism consuming or touching the resource, not by universal properties of the resource type alone.
 
 ## Vita
 
@@ -90,11 +122,11 @@ Temperature, ooze density, and similar environmental properties are parked as fu
 
 ## Resource Types
 
-The resource catalog will define each available resource, including its properties, production and transformation rules, storage behavior, and effects on different organisms. A resource may have organism-specific effects as well as universal effects.
+The resource catalog will define each available resource type and its identity in the world.
 
 ## Organism Types
 
-The organism catalog will define each available organism type, including its properties, abilities, behavior, visibility range, activation range, Vita use efficiency, resource requirements, and interactions with other organisms.
+The organism catalog will define each available organism type, including its properties, abilities, behavior, visibility range, activation range, Vita use efficiency, resource requirements, resource production and transformation rules, effects when consuming or touching resources, and interactions with other organisms.
 
 ## World Generation
 
@@ -153,30 +185,17 @@ Resource and organism distribution is part of the progression model. More advanc
 ### Cells, Organisms, and Identity
 
 - Does every cell have both a type and mutable state, and which data belongs to the cell versus the organism as a whole?
-- When an organism splits, how are stored resources, age, health, control, and other organism-level properties divided?
+- When an organism splits, how are age, health, control, and other organism-level properties divided?
 - What happens to an organism's cells when it dies: immediate conversion to ooze, gradual decay, or transformation into resources?
-- Which local neighborhood rules are used—six face neighbors, all 26 surrounding cells, or a type-specific range?
 - How do effects propagate without movement, and what limits their range, speed, and duration?
 
 ### Control and Player Actions
 
 - What does “player-controlled” mean when organisms do not move? Which behaviors can the player configure or trigger?
 - Under what conditions can an organism become independent or return to player control?
-- Can hostile or independent organisms be directly manipulated once visible, or only influenced indirectly?
-- When seeding an organism, where are the required resources drawn from? Must they be adjacent, connected through an organism network, or merely visible anywhere?
 - Does seeding create a single body cell, a complete starter organism, or a growth process?
 - Is right-click permanently reserved for applying the selected tool, and how does the player choose organism types and inspect cells?
 - Are actions instantaneous, tick-based, or powered over time by Vita?
-
-### Resources and Transformation
-
-- Can a cell contain only one resource type, and can it contain both a resource and an organism body cell?
-- How are resource quantities represented, transferred, and displayed?
-- If cells never move, how do resources travel between cells or between organisms?
-- What determines whether a raw resource is usable, and which organism must process it?
-- Are transformed resources globally available to the player, or must they remain physically stored and connected to where they are used?
-- What happens to stored resources when their organism splits, changes control, or dies?
-- Are resource effects intrinsic to the resource, specific to the consuming organism, or resolved by an explicit combination of both?
 
 ### Biomes and World Generation
 
