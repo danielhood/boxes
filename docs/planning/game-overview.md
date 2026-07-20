@@ -38,7 +38,7 @@ The game is single-player only. There is one player per world, with no multiplay
 - **Vita:** An ambient energy concept that permeates the world. Vita is not a quantifiable resource—the world assumes an infinite supply is always available everywhere. Organisms draw on Vita to power biological processes at a rate governed by their **Vita use efficiency**.
 - **Cell:** The smallest spatial unit in the game, represented by a three-dimensional cube. Each cell is exactly one of: ooze, a single resource type, or an organism body cell.
 - **Resource:** A typed material stored in a resource cell as a quantity. Resources do not move; they are consumed or generated in place.
-- **Organism:** A contiguous group of body cells that share one body type. Organisms may be controlled by the player or act independently.
+- **Organism:** A contiguous group of body cells that share one body type, backed by an organism instance that holds state separate from its body cells. Organisms may be controlled by the player or act independently.
 - **Experience (XP):** A measure of the player's activity and progress within the current world. Interacting with the world and growing controlled organisms grants XP, which determines the player's XP level.
 - **Knowledge:** The collection of abilities available to the player in the current world. Knowledge is acquired through discovery and by reaching new XP levels, making it the primary progression system. Unlocking all Knowledge is required to complete the game. Both XP and Knowledge are stored with the world state and do not carry over to a new game.
 - **Time:** The simulation advances continuously through discrete ticks. Organisms age over time and eventually die.
@@ -50,7 +50,11 @@ Nothing in the world changes position. Organisms, resources, and individual cell
 
 There are no moving projectiles. Effects that might otherwise be represented by projectiles must instead propagate through local cell interactions or fields of positive or negative influence.
 
-Each cell is exactly one of three kinds: **ooze**, a **resource** cell holding one resource type, or an **organism body** cell. A cell cannot combine types—for example, a resource cell cannot also be part of an organism. Ooze is effectively inert, empty space. Organism identity is determined by connectivity: all contiguous body cells of the same body type form one organism. If two body cells of the same type touch, they belong to the same organism. Disconnected groups of the same body type are separate organisms. Transformations can connect or separate these groups, allowing organisms to merge or split.
+Each cell is exactly one of three kinds: **ooze**, a **resource** cell holding one resource type, or an **organism body** cell. A cell cannot combine types—for example, a resource cell cannot also be part of an organism. Ooze is effectively inert, empty space.
+
+**Resource cells** store the resource type and amount on the cell. **Body cells** store the body type and an association to the organism instance they belong to. **Organism-level state**—such as age, health, and control—is tracked on the organism instance, not on individual body cells.
+
+Organism identity is determined by connectivity: all contiguous body cells of the same body type form one organism and reference a single organism instance. If two body cells of the same type touch, they belong to the same organism. Disconnected groups of the same body type are separate organisms with separate instances. Transformations can connect or separate body-cell groups, allowing organisms to merge or split.
 
 Local adjacency for resource interaction uses **face neighbors** only—the six cells that share a face with a given cell. For player actions, a cell is **in contact** with a player-controlled organism when it is face-adjacent to at least one of that organism's body cells.
 
@@ -69,6 +73,14 @@ Independent organisms outside the active simulation remain frozen until they act
 The player can seed a new organism when the required resources and knowledge are available. Required resources must be in contact with a player-controlled organism. Seeding requires sufficient resources; if the player has none accessible this way, they cannot establish new organisms. The current interaction concept uses a right-click tool to transform an ooze cell into the selected organism type.
 
 Nearby organisms interact through local rules. An interaction may benefit, harm, or have no effect on either organism, depending on the organisms' types and properties.
+
+### Organism state
+
+An organism's state is tracked as a whole, separate from its body cells. Body cells hold only spatial membership—their body type and a reference to the organism instance they represent.
+
+### Split and merge
+
+When an organism splits, each resulting organism begins with the same age, health, and control as the parent. As additional organism properties are defined, split and merge behavior must be specified per property in the organism catalog. Most properties will simply duplicate to each new organism; others may be divided proportionally, possibly based on the volume (number of body cells) of each new body.
 
 ## Resources
 
@@ -126,7 +138,7 @@ The resource catalog will define each available resource type and its identity i
 
 ## Organism Types
 
-The organism catalog will define each available organism type, including its properties, abilities, behavior, visibility range, activation range, Vita use efficiency, resource requirements, resource production and transformation rules, effects when consuming or touching resources, and interactions with other organisms.
+The organism catalog will define each available organism type, including its properties, abilities, behavior, visibility range, activation range, Vita use efficiency, resource requirements, resource production and transformation rules, effects when consuming or touching resources, split and merge rules per property, and interactions with other organisms.
 
 ## World Generation
 
@@ -184,8 +196,6 @@ Resource and organism distribution is part of the progression model. More advanc
 
 ### Cells, Organisms, and Identity
 
-- Does every cell have both a type and mutable state, and which data belongs to the cell versus the organism as a whole?
-- When an organism splits, how are age, health, control, and other organism-level properties divided?
 - What happens to an organism's cells when it dies: immediate conversion to ooze, gradual decay, or transformation into resources?
 - How do effects propagate without movement, and what limits their range, speed, and duration?
 
