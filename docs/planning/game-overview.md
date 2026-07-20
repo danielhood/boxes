@@ -62,6 +62,8 @@ Organisms reveal nearby cells, allowing the player to discover more of the world
 
 Some organisms are player-controlled, while others operate independently. Independent organisms may be harmful, neutral, or beneficial. Environmental influences may cause an organism to transition between controlled and independent states. When a controlled organism becomes independent, the player loses control of it.
 
+Independent organisms outside the active simulation remain frozen until they activate. An inactive independent organism becomes active when an active player-controlled organism comes within its **activation range**. That range is defined by the inactive organism's attributes and may extend beyond the player-controlled organism's visibility range.
+
 The player can seed a new organism when the required resources and knowledge are available. Seeding requires sufficient resources; if the player has none, they cannot establish new organisms. The current interaction concept uses a right-click tool to transform an ooze cell into the selected organism type.
 
 Nearby organisms interact through local rules. An interaction may benefit, harm, or have no effect on either organism, depending on the organisms' types and properties.
@@ -88,7 +90,7 @@ The resource catalog will define each available resource, including its properti
 
 ## Organism Types
 
-The organism catalog will define each available organism type, including its properties, abilities, behavior, visibility range, resource requirements, and interactions with other organisms.
+The organism catalog will define each available organism type, including its properties, abilities, behavior, visibility range, activation range, resource requirements, and interactions with other organisms.
 
 ## World Generation
 
@@ -124,7 +126,15 @@ World boundaries are impassable voids. Cells cannot exist or grow beyond the cub
 
 Visibility expands as the player's organisms grow and spread. If controlled organisms die, previously connected visible regions may become separated by unknown space.
 
-Independent organisms outside visible areas are intended to remain inactive until they are discovered or come within an awareness range of the player's visible territory.
+### Simulation outside visible areas
+
+Inactive independent organisms are excluded from time progression and remain frozen in their current state. They do not age, consume resources, produce resources, fight, or die while inactive. This keeps them out of sync with the active world, but it is likely necessary for game performance. It also prevents high-level independent organisms from advancing toward the player before the player is ready.
+
+Invisibility and inactivity are not the same. An organism may be hidden from the player while still active. An inactive independent organism becomes active when an active player-controlled organism enters its **activation range**, which is defined by the inactive organism's attributes. Because this range may extend beyond the player-controlled organism's visibility range, an independent organism can become active—and begin simulating—before the player can see it. This creates a band at the edge of the visible world where organisms may be active but still unknown to the player.
+
+When an inactive organism becomes active, it resumes from the state it was in when it became inactive. If it has never been active during the game, it resumes from the state it had when generated. Elapsed time while inactive is not simulated in batch.
+
+Activation and visibility are governed by separate, deterministic rules: activation depends on distance to active player-controlled organisms, and visibility depends on controlled-organism visibility range. Because unknown cells reveal no information regardless of what is simulating behind them, off-screen activation does not indirectly inform the player about hidden areas. Determinism and information hiding are implementation concerns for the simulation layer, not open design questions at this level.
 
 Resource and organism distribution is part of the progression model. More advanced or dangerous content is placed farther from the starting point as generation expands outward from the player's initial location.
 
@@ -135,13 +145,6 @@ Resource and organism distribution is part of the progression model. More advanc
 - Exactly which actions grant XP, how much XP do they grant, and can repeated low-risk actions be exploited?
 - What is unlocked through XP levels versus discovery? Can knowledge be lost, hidden, or acquired in multiple ways?
 - How are advanced resources and organisms introduced so that discovery feels intentional rather than arbitrary?
-
-### Simulation Outside Visible Areas
-
-- Time is described as continuous and organisms age, but organisms in non-visible areas are described as inactive. Do hidden organisms age, consume resources, produce resources, fight, and die?
-- If hidden areas are paused, how are they reconciled when discovered? Do they resume from their original generated state or simulate elapsed time in a batch?
-- What causes an undiscovered organism to become aware of the player's territory, and can that occur before the player can see it?
-- How can off-screen activation remain deterministic and avoid revealing information indirectly?
 
 ### Cells, Organisms, and Identity
 
