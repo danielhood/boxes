@@ -113,7 +113,13 @@ When an organism splits, each resulting organism begins with the same age and co
 
 ## Player Actions
 
-The player has exactly two actions. Both are applied to a specific visible cell and invoked with the **right mouse button**.
+The player has exactly two actions: **Seed** and **Transfer**. Both target a specific visible cell.
+
+### UI interaction
+
+The player selects cells in the world with the **left mouse button**. The selected cell is shown in the cell inspection window.
+
+After selecting a cell, the player chooses an action type in the UI. The UI then walks through any additional parameters required for that action and type—for example, organism type for Seed, or resource type, amount, and source cell for Transfer. The action is applied once all required parameters are specified.
 
 ### Player control
 
@@ -121,7 +127,7 @@ The player has exactly two actions. Both are applied to a specific visible cell 
 
 ### Seed
 
-**Seed** transforms an **ooze** cell into a single **organism body** cell of a selected organism type. Only organism types unlocked in the player's current **Knowledge** may be selected. The new organism begins as a one-cell body, is player-controlled, and then follows the normal simulation rules. It will grow when it has the resources and conditions to do so.
+**Seed** transforms an **ooze** cell into a single **organism body** cell of a selected organism type. Only organism types unlocked in the player's current **Knowledge** may be selected. The new organism begins as a one-cell body, is player-controlled, and then follows the normal simulation rules. It will grow when it has the resources and conditions to do so. Seeding around an independent organism is one way to apply negative influence and potentially bring it under player control.
 
 Seeding is immediate.
 
@@ -136,8 +142,6 @@ The target cell must be one of:
 - a **player-controlled organism body** cell (converting it to a resource cell of that type).
 
 The source cell loses the transferred amount. The player cannot act on body cells of independent or hostile organisms. Transfers are immediate; distance and time are not factors.
-
-Resource quantities are initially displayed only through the cell inspection window.
 
 ## Resources
 
@@ -244,10 +248,6 @@ Resource and organism distribution is part of the progression model. More advanc
 - Exactly which actions grant XP, how much XP do they grant, and can repeated low-risk actions be exploited?
 - What is unlocked through XP levels versus discovery? Can knowledge be lost, hidden, or acquired in multiple ways?
 - How are advanced resources and organisms introduced so that discovery feels intentional rather than arbitrary?
-
-### Control and Player Actions
-
-- How does the player select the active action, organism type, resource type, transfer amount, and source cell, and inspect cells in the UI?
 
 ### Biomes and World Generation
 
