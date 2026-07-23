@@ -38,7 +38,7 @@ The game is single-player only. There is one player per world, with no multiplay
 - **Vita:** An ambient energy concept that permeates the world. Vita is not a quantifiable resource—the world assumes an infinite supply is always available everywhere. Organisms draw on Vita to power biological processes at a rate governed by their **Vita use efficiency**.
 - **Cell:** The smallest spatial unit in the game, represented by a three-dimensional cube. Each cell is exactly one of: ooze, a single resource type, or an organism body cell.
 - **Resource:** A typed material stored in a resource cell as a quantity. Resources do not move; they are consumed or generated in place.
-- **Organism:** A contiguous group of body cells that share one body type, backed by an organism instance that holds state separate from its body cells. Organisms may be controlled by the player or act independently.
+- **Organism:** A contiguous group of body cells that share one body type, backed by an organism instance that holds state separate from its body cells. Organisms may be controlled by the player or act independently. Ownership is governed by **Influence**.
 - **Experience (XP):** A measure of the player's activity and progress within the current world. Interacting with the world and growing controlled organisms grants XP, which determines the player's XP level.
 - **Knowledge:** The collection of abilities available to the player in the current world. Knowledge is acquired through discovery and by reaching new XP levels, making it the primary progression system. Unlocking all Knowledge is required to complete the game. Both XP and Knowledge are stored with the world state and do not carry over to a new game.
 - **Time:** The simulation advances continuously through discrete ticks. Organisms age over time and eventually die.
@@ -84,18 +84,18 @@ An organism's state is tracked as a whole, separate from its body cells. Body ce
 
 An organism's **health** is directly tied to its body size: it equals the number of body cells the organism currently contains.
 
-An organism's **Influence** starts at 0 and tracks pressure toward a change in ownership. Certain organism types apply **negative influence** to organisms under a different control. The player can build **positive influence** on player-controlled organisms by providing certain resources, as defined for that organism type. When Influence crosses a threshold defined for the organism type, ownership changes—either to player control or to independent control, depending on the direction crossed.
+An organism's **Influence** starts at 0 and tracks pressure toward a change in ownership. Certain organism types apply **negative influence** to organisms under a different control. The player can build **positive influence** only on player-controlled organisms, by providing certain resources as defined for that organism type. When Influence crosses a threshold defined for the organism type, ownership changes and Influence resets to 0.
 
 ### Control and Influence
 
 **Influence** is an organism-level property distinct from spatial effect fields. It governs transitions between player control and independent control.
 
-Each organism begins with Influence at 0. Over time, Influence moves positive or negative based on local interactions:
+Each organism begins with Influence at 0. Over time, Influence moves based on local interactions:
 
-- **Negative influence:** Certain organism types apply negative influence to organisms under a different control.
-- **Positive influence:** The player can increase Influence on player-controlled organisms by providing certain resources in contact with them, as defined for that organism type in the organism catalog.
+- **Negative influence:** Certain organism types apply negative influence to organisms under a different control. A player-controlled organism that accumulates enough negative influence from nearby independent organisms may become independent. Conversely, the player can seed player-controlled organisms around an independent organism so that those organisms apply negative influence to it; if the independent organism accumulates enough negative influence, it may become player-controlled.
+- **Positive influence:** The player can increase Influence on player-controlled organisms only, by providing certain resources in contact with them, as defined for that organism type in the organism catalog. The player cannot build positive influence on independent organisms.
 
-When an organism's Influence reaches a threshold defined for its type, its ownership changes. Crossing toward negative Influence makes an organism independent; crossing toward positive Influence brings it under player control. Thresholds, rates, and qualifying resources are defined per organism type in the organism catalog.
+When an organism's Influence reaches a threshold defined for its type, its ownership changes and its Influence **resets to 0**. Thresholds, rates, and qualifying resources are defined per organism type in the organism catalog.
 
 ### Health, growth, and death
 
