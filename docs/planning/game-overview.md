@@ -66,7 +66,7 @@ An organism contains only one body type. Body cells that touch an organism of a 
 
 Organisms reveal nearby cells, allowing the player to discover more of the world. Each organism type defines how far beyond its outer extent it reveals surrounding cells.
 
-Some organisms are player-controlled, while others operate independently. Independent organisms may be harmful, neutral, or beneficial. Environmental influences may cause an organism to transition between controlled and independent states. When a controlled organism becomes independent, the player loses control of it.
+Some organisms are player-controlled, while others operate independently. Independent organisms may be harmful, neutral, or beneficial. Ownership transitions between player control and independent control are governed by **Influence** (see below). When a controlled organism becomes independent, the player loses control of it.
 
 Independent organisms outside the active simulation remain frozen until they activate. An inactive independent organism becomes active when an active player-controlled organism comes within its **activation range**. That range is defined by the inactive organism's attributes and may extend beyond the player-controlled organism's visibility range.
 
@@ -84,6 +84,19 @@ An organism's state is tracked as a whole, separate from its body cells. Body ce
 
 An organism's **health** is directly tied to its body size: it equals the number of body cells the organism currently contains.
 
+An organism's **Influence** starts at 0 and tracks pressure toward a change in ownership. Certain organism types apply **negative influence** to organisms under a different control. The player can build **positive influence** on player-controlled organisms by providing certain resources, as defined for that organism type. When Influence crosses a threshold defined for the organism type, ownership changes—either to player control or to independent control, depending on the direction crossed.
+
+### Control and Influence
+
+**Influence** is an organism-level property distinct from spatial effect fields. It governs transitions between player control and independent control.
+
+Each organism begins with Influence at 0. Over time, Influence moves positive or negative based on local interactions:
+
+- **Negative influence:** Certain organism types apply negative influence to organisms under a different control.
+- **Positive influence:** The player can increase Influence on player-controlled organisms by providing certain resources in contact with them, as defined for that organism type in the organism catalog.
+
+When an organism's Influence reaches a threshold defined for its type, its ownership changes. Crossing toward negative Influence makes an organism independent; crossing toward positive Influence brings it under player control. Thresholds, rates, and qualifying resources are defined per organism type in the organism catalog.
+
 ### Health, growth, and death
 
 Each tick, an organism either maintains its current body cells, grows, or decays, depending on whether it has the resources and conditions to sustain—and optionally expand—its body.
@@ -96,7 +109,7 @@ An organism **dies** when its last body cell can no longer be sustained. That fi
 
 ### Split and merge
 
-When an organism splits, each resulting organism begins with the same age and control as the parent. Health is derived from body size, so each resulting organism's health equals its own body-cell count after the split. As additional organism properties are defined, split and merge behavior must be specified per property in the organism catalog. Most properties will simply duplicate to each new organism; others may be divided proportionally, possibly based on the volume (number of body cells) of each new body.
+When an organism splits, each resulting organism begins with the same age and control as the parent. Health is derived from body size, so each resulting organism's health equals its own body-cell count after the split. Influence and other properties follow split and merge rules defined per property in the organism catalog. Most properties will simply duplicate to each new organism; others may be divided proportionally, possibly based on the volume (number of body cells) of each new body.
 
 ## Player Actions
 
@@ -176,7 +189,7 @@ The resource catalog will define each available resource type and its identity i
 
 ## Organism Types
 
-The organism catalog will define each available organism type, including its properties, abilities, behavior, visibility range, activation range, effect range and other effect limits (with any augmentation rules), Vita use efficiency, resource requirements, resource production and transformation rules, effects when consuming or touching resources, split and merge rules per property, and interactions with other organisms.
+The organism catalog will define each available organism type, including its properties, abilities, behavior, visibility range, activation range, effect range and other effect limits (with any augmentation rules), Influence thresholds and rates (including resources that grant positive influence), Vita use efficiency, resource requirements, resource production and transformation rules, effects when consuming or touching resources, split and merge rules per property, and interactions with other organisms.
 
 ## World Generation
 
@@ -234,7 +247,6 @@ Resource and organism distribution is part of the progression model. More advanc
 
 ### Control and Player Actions
 
-- Under what conditions can an organism become independent or return to player control?
 - How does the player select the active action, organism type, resource type, transfer amount, and source cell, and inspect cells in the UI?
 
 ### Biomes and World Generation
