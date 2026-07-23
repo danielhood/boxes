@@ -74,6 +74,12 @@ The player can seed a new organism when the required resources and knowledge are
 
 Nearby organisms interact through local rules. An interaction may benefit, harm, or have no effect on either organism, depending on the organisms' types and properties.
 
+### Effect range and propagation
+
+Effects do not travel as moving entities. They propagate through local cell interactions or fields of influence emanating from an organism, measured from its outer extent.
+
+The **range**, **speed**, and **duration** of an organism's effects are defined by that organism's properties. Each organism type specifies base values in the organism catalog. Those bases may be augmented by other factors defined for that type—such as resources in contact, organism size, or other state—according to rules declared for the type.
+
 ### Organism state
 
 An organism's state is tracked as a whole, separate from its body cells. Body cells hold only spatial membership—their body type and a reference to the organism instance they represent.
@@ -150,7 +156,7 @@ The resource catalog will define each available resource type and its identity i
 
 ## Organism Types
 
-The organism catalog will define each available organism type, including its properties, abilities, behavior, visibility range, activation range, Vita use efficiency, resource requirements, resource production and transformation rules, effects when consuming or touching resources, split and merge rules per property, and interactions with other organisms.
+The organism catalog will define each available organism type, including its properties, abilities, behavior, visibility range, activation range, effect range and other effect limits (with any augmentation rules), Vita use efficiency, resource requirements, resource production and transformation rules, effects when consuming or touching resources, split and merge rules per property, and interactions with other organisms.
 
 ## World Generation
 
@@ -205,10 +211,6 @@ Resource and organism distribution is part of the progression model. More advanc
 - Exactly which actions grant XP, how much XP do they grant, and can repeated low-risk actions be exploited?
 - What is unlocked through XP levels versus discovery? Can knowledge be lost, hidden, or acquired in multiple ways?
 - How are advanced resources and organisms introduced so that discovery feels intentional rather than arbitrary?
-
-### Cells, Organisms, and Identity
-
-- How do effects propagate without movement, and what limits their range, speed, and duration?
 
 ### Control and Player Actions
 
