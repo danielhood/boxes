@@ -74,13 +74,31 @@ The player can seed a new organism when the required resources and knowledge are
 
 Nearby organisms interact through local rules. An interaction may benefit, harm, or have no effect on either organism, depending on the organisms' types and properties.
 
+### Effect range and propagation
+
+Effects do not travel as moving entities. They propagate through local cell interactions or fields of influence emanating from an organism, measured from its outer extent.
+
+The **range**, **speed**, and **duration** of an organism's effects are defined by that organism's properties. Each organism type specifies base values in the organism catalog. Those bases may be augmented by other factors defined for that type—such as resources in contact, organism size, or other state—according to rules declared for the type.
+
 ### Organism state
 
 An organism's state is tracked as a whole, separate from its body cells. Body cells hold only spatial membership—their body type and a reference to the organism instance they represent.
 
+An organism's **health** is directly tied to its body size: it equals the number of body cells the organism currently contains.
+
+### Health, growth, and death
+
+Each tick, an organism either maintains its current body cells, grows, or decays, depending on whether it has the resources and conditions to sustain—and optionally expand—its body.
+
+When an organism cannot maintain all of its current body cells, it **decays** by removing body cells from its **outer layer**, converting each removed cell to ooze. The organism shrinks progressively from the outside inward. Without other influences, which outer-layer body cell decays in a given tick is chosen at random.
+
+When an organism can maintain its current body cells and has capacity to grow, it **grows** by converting a face-adjacent ooze cell touching its outer layer into a new body cell of its body type. Without other influences, which eligible adjacent cell is converted is chosen at random.
+
+An organism **dies** when its last body cell can no longer be sustained. That final body cell is converted to ooze. Death does not produce resource cells; body cells become ooze only.
+
 ### Split and merge
 
-When an organism splits, each resulting organism begins with the same age, health, and control as the parent. As additional organism properties are defined, split and merge behavior must be specified per property in the organism catalog. Most properties will simply duplicate to each new organism; others may be divided proportionally, possibly based on the volume (number of body cells) of each new body.
+When an organism splits, each resulting organism begins with the same age and control as the parent. Health is derived from body size, so each resulting organism's health equals its own body-cell count after the split. As additional organism properties are defined, split and merge behavior must be specified per property in the organism catalog. Most properties will simply duplicate to each new organism; others may be divided proportionally, possibly based on the volume (number of body cells) of each new body.
 
 ## Resources
 
@@ -138,7 +156,7 @@ The resource catalog will define each available resource type and its identity i
 
 ## Organism Types
 
-The organism catalog will define each available organism type, including its properties, abilities, behavior, visibility range, activation range, Vita use efficiency, resource requirements, resource production and transformation rules, effects when consuming or touching resources, split and merge rules per property, and interactions with other organisms.
+The organism catalog will define each available organism type, including its properties, abilities, behavior, visibility range, activation range, effect range and other effect limits (with any augmentation rules), Vita use efficiency, resource requirements, resource production and transformation rules, effects when consuming or touching resources, split and merge rules per property, and interactions with other organisms.
 
 ## World Generation
 
@@ -193,11 +211,6 @@ Resource and organism distribution is part of the progression model. More advanc
 - Exactly which actions grant XP, how much XP do they grant, and can repeated low-risk actions be exploited?
 - What is unlocked through XP levels versus discovery? Can knowledge be lost, hidden, or acquired in multiple ways?
 - How are advanced resources and organisms introduced so that discovery feels intentional rather than arbitrary?
-
-### Cells, Organisms, and Identity
-
-- What happens to an organism's cells when it dies: immediate conversion to ooze, gradual decay, or transformation into resources?
-- How do effects propagate without movement, and what limits their range, speed, and duration?
 
 ### Control and Player Actions
 
