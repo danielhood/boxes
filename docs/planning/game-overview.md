@@ -25,7 +25,7 @@ The player's organisms are continuously threatened by harmful resources and inde
 
 The player loses the game when they have no controlled organisms remaining. A player loses control of an organism when that organism becomes independent or dies.
 
-Resource depletion creates additional pressure. If the player runs out of resources, they can no longer seed new organisms. Without the ability to establish new controlled organisms, the player may eventually lose their last remaining organism and fail the game.
+Resource depletion creates additional pressure. Without resources, controlled organisms cannot sustain themselves or grow, and the player cannot transfer resources. If the player loses all controlled organisms, they fail the game.
 
 ### Progression and persistence
 
@@ -70,8 +70,6 @@ Some organisms are player-controlled, while others operate independently. Indepe
 
 Independent organisms outside the active simulation remain frozen until they activate. An inactive independent organism becomes active when an active player-controlled organism comes within its **activation range**. That range is defined by the inactive organism's attributes and may extend beyond the player-controlled organism's visibility range.
 
-The player can seed a new organism when the required resources and knowledge are available. Required resources must be in contact with a player-controlled organism. Seeding requires sufficient resources; if the player has none accessible this way, they cannot establish new organisms. The current interaction concept uses a right-click tool to transform an ooze cell into the selected organism type.
-
 Nearby organisms interact through local rules. An interaction may benefit, harm, or have no effect on either organism, depending on the organisms' types and properties.
 
 ### Effect range and propagation
@@ -100,6 +98,34 @@ An organism **dies** when its last body cell can no longer be sustained. That fi
 
 When an organism splits, each resulting organism begins with the same age and control as the parent. Health is derived from body size, so each resulting organism's health equals its own body-cell count after the split. As additional organism properties are defined, split and merge behavior must be specified per property in the organism catalog. Most properties will simply duplicate to each new organism; others may be divided proportionally, possibly based on the volume (number of body cells) of each new body.
 
+## Player Actions
+
+The player has exactly two actions. Both are applied to a specific visible cell and invoked with the **right mouse button**.
+
+### Player control
+
+**Player-controlled** means the organism is owned by the player: it contributes to visibility, resources **in contact** with it are available to the player, and its body cells may be targeted by player actions. The player does not move organisms or manually trigger their biological behaviors. Growth, consumption, production, aging, and interactions proceed automatically each simulation tick according to organism type rules and local conditions.
+
+### Seed
+
+**Seed** transforms an **ooze** cell into a single **organism body** cell of a selected organism type. Only organism types unlocked in the player's current **Knowledge** may be selected. The new organism begins as a one-cell body, is player-controlled, and then follows the normal simulation rules. It will grow when it has the resources and conditions to do so.
+
+Seeding is immediate.
+
+### Transfer
+
+**Transfer** moves an amount of a selected resource type from a source resource cell to a target cell. The player may transfer only resource types currently available through cells **in contact** with a player-controlled organism.
+
+The target cell must be one of:
+
+- an existing **resource** cell of the same type (adding to its amount),
+- an **ooze** cell, or
+- a **player-controlled organism body** cell (converting it to a resource cell of that type).
+
+The source cell loses the transferred amount. The player cannot act on body cells of independent or hostile organisms. Transfers are immediate; distance and time are not factors.
+
+Resource quantities are initially displayed only through the cell inspection window.
+
 ## Resources
 
 Resources occur naturally in the world and may also be produced by organisms. Depending on the consuming or touching organism, a resource may be beneficial, harmful, or inert. Harmful resources are a primary threat to the player's organisms.
@@ -127,12 +153,6 @@ Resource consumption, generation, transformation, and combination are performed 
 An organism consumes or generates a resource only if it has an ability that processes that resource type. Generation into a new resource cell converts an ooze cell, or an organism body cell other than the organism's last remaining body cell, into a resource cell of the generated type. An organism generates a resource cell only when no other resource cells of that type are available to it—that is, none are in contact with the organism.
 
 Transformations that combine resources into more advanced types are also performed by organisms, drawing on Vita over time at a rate governed by the organism's Vita use efficiency.
-
-### Player reallocation
-
-The player may transfer an amount of a resource from one resource cell to another, provided both cells are **in contact** with a player-controlled organism—that is, face-adjacent to at least one of its body cells. The player cannot create new resource amounts, convert cells to resource types, or transform or combine resources; those actions are reserved for organisms. The player cannot manipulate body cells of independent or hostile organisms. Player transfers are immediate; distance and time are not factors.
-
-Resource quantities are initially displayed only through the cell inspection window.
 
 ### Organism changes and resource effects
 
@@ -214,11 +234,8 @@ Resource and organism distribution is part of the progression model. More advanc
 
 ### Control and Player Actions
 
-- What does “player-controlled” mean when organisms do not move? Which behaviors can the player configure or trigger?
 - Under what conditions can an organism become independent or return to player control?
-- Does seeding create a single body cell, a complete starter organism, or a growth process?
-- Is right-click permanently reserved for applying the selected tool, and how does the player choose organism types and inspect cells?
-- Are actions instantaneous, tick-based, or powered over time by Vita?
+- How does the player select the active action, organism type, resource type, transfer amount, and source cell, and inspect cells in the UI?
 
 ### Biomes and World Generation
 
